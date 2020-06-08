@@ -5,6 +5,16 @@
     <LangVersion>8</LangVersion>
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <VersionPrefix>0.1.0</VersionPrefix>
+    <PackageId>Biz.Morsink.Results</PackageId>
+    <Description>A result class and utility for failures.</Description>
+    <PackageProjectUrl>https://github.com/joost-morsink/Biz.Morsink.Results</PackageProjectUrl>
+    <RootNamespace>Biz.Morsink.Results</RootNamespace>
+    <Copyright>(C) 2020 Joost W. Morsink</Copyright>
+    <PackageTags>Results</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryType>Git</RepositoryType>
+    <RepositoryUrl>https://github.com/joost-morsink/Biz.Morsink.Results.git</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
