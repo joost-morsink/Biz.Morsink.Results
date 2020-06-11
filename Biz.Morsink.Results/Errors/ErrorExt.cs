@@ -18,5 +18,11 @@ namespace Biz.Morsink.Results.Errors
         public static Result<ImmutableArray<R>, ErrorList> CreateAllWithKey<T, R>(this IEnumerable<T> elements, Func<T, Result<R, ErrorList>> create, Func<T, string> keyFunc)
             where T : notnull
             => elements.Select(e => create(e).Prefix(keyFunc(e))).Sequence();
+        public static Result<T, ErrorList> IfValidThen<T>(this IEnumerable<Error> errors, Func<T> creator)
+            => errors.Any() ? (Result<T, ErrorList>)new Result<T, ErrorList>.Failure(new ErrorList(errors)) : new Result<T, ErrorList>.Success(creator());
+        public static Result<T, ErrorList> IfValidThen<T>(this IEnumerable<Error> errors, Func<Result<T, ErrorList>> creator)
+            => errors.Any() ? new Result<T, ErrorList>.Failure(new ErrorList(errors)) : creator();
+        public static Result<T, ErrorList> StringToError<T>(this Result<T, string> result)
+            => result.SelectError(e => new ErrorList(new[] { new Error("", null, e) }));
     }
 }

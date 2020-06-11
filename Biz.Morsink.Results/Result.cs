@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
 namespace Biz.Morsink.Results
@@ -257,12 +258,67 @@ namespace Biz.Morsink.Results
             else
                 return res.Success(results.OfType<ISuccess<T>>().Select(s => s.Value).ToImmutableHashSet());
         }
+
+        public static Result<(T, U), E> Sequence<T, U, E>(this (Result<T, E>, Result<U, E>) result)
+            => result.Apply((t, u) => (t, u));
+        public static Result<(T, U, V), E> Sequence<T, U, V, E>(this (Result<T, E>, Result<U, E>, Result<V, E>) result)
+            => result.Apply((t, u, v) => (t, u, v));
+        public static Result<(T, U, V, W), E> Sequence<T, U, V, W, E>(this (Result<T, E>, Result<U, E>, Result<V, E>, Result<W, E>) result)
+            => result.Apply((t, u, v, w) => (t, u, v, w));
+        public static Result<(T, U, V, W, X), E> Sequence<T, U, V, W, X, E>(this (Result<T, E>, Result<U, E>, Result<V, E>, Result<W, E>, Result<X, E>) result)
+            => result.Apply((t, u, v, w, x) => (t, u, v, w, x));
+        public static Result<(T, U, V, W, X, Y), E> Sequence<T, U, V, W, X, Y, E>(this (Result<T, E>, Result<U, E>, Result<V, E>, Result<W, E>, Result<X, E>, Result<Y, E>) result)
+            => result.Apply((t, u, v, w, x, y) => (t, u, v, w, x, y));
+        public static Result<(T, U, V, W, X, Y, Z), E> Sequence<T, U, V, W, X, Y, Z, E>(this (Result<T, E>, Result<U, E>, Result<V, E>, Result<W, E>, Result<X, E>, Result<Y, E>, Result<Z, E>) result)
+            => result.Apply((t, u, v, w, x, y, z) => (t, u, v, w, x, y, z));
+
         public static ValueTask<Result<U, E>> SelectAsync<T, U, E>(this Result<T, E> result, Func<T, Task<U>> f)
         {
             var res = ForError<E>();
             return result.Switch<ValueTask<Result<U, E>>>(async t => res.Success(await f(t)), e => new ValueTask<Result<U, E>>(res.Failure<U>(e)));
         }
+        public static ValueTask<Result<U, E>> SelectAsyncValue<T, U, E>(this Result<T, E> result, Func<T, ValueTask<U>> f)
+        {
+            var res = ForError<E>();
+            return result.Switch<ValueTask<Result<U, E>>>(async t => res.Success(await f(t)), e => new ValueTask<Result<U, E>>(res.Failure<U>(e)));
+        }
+
+        public static ValueTask<Result<T, E>> TraverseAsync<T, E>(this Result<ValueTask<T>, E> result)
+            => result.SelectAsyncValue(x => x);
+        public static ValueTask<Result<T, E>> TraverseAsync<T, E>(this Result<Task<T>, E> result)
+            => result.SelectAsyncValue(async x => await x);
+
+        public static async ValueTask<Result<R, E>> ApplyAsync<T, U, R, E>(this (Task<Result<T, E>>, Task<Result<U, E>>) results, Func<T, U, Task<R>> func)
+            => await (await results.Item1, await results.Item2).Sequence().SelectAsync(t => func(t.Item1, t.Item2));
+        public static async ValueTask<Result<R, E>> ApplyAsync<T, U, V, R, E>(this (Task<Result<T, E>>, Task<Result<U, E>>, Task<Result<V, E>>) results, Func<T, U, V, Task<R>> func)
+            => await (await results.Item1, await results.Item2, await results.Item3).Sequence().SelectAsync(t => func(t.Item1, t.Item2, t.Item3));
+        public static async ValueTask<Result<R, E>> ApplyAsync<T, U, V, W, R, E>(this (Task<Result<T, E>>, Task<Result<U, E>>, Task<Result<V, E>>, Task<Result<W, E>>) results, Func<T, U, V, W, Task<R>> func)
+            => await (await results.Item1, await results.Item2, await results.Item3, await results.Item4).Sequence().SelectAsync(t => func(t.Item1, t.Item2, t.Item3, t.Item4));
+        public static async ValueTask<Result<R, E>> ApplyAsync<T, U, V, W, X, R, E>(this (Task<Result<T, E>>, Task<Result<U, E>>, Task<Result<V, E>>, Task<Result<W, E>>, Task<Result<X, E>>) results, Func<T, U, V, W, X, Task<R>> func)
+            => await (await results.Item1, await results.Item2, await results.Item3, await results.Item4, await results.Item5).Sequence().SelectAsync(t => func(t.Item1, t.Item2, t.Item3, t.Item4, t.Item5));
+        public static async ValueTask<Result<R, E>> ApplyAsync<T, U, V, W, X, Y, R, E>(this (Task<Result<T, E>>, Task<Result<U, E>>, Task<Result<V, E>>, Task<Result<W, E>>, Task<Result<X, E>>, Task<Result<Y, E>>) results, Func<T, U, V, W, X, Y, Task<R>> func)
+            => await (await results.Item1, await results.Item2, await results.Item3, await results.Item4, await results.Item5, await results.Item6).Sequence().SelectAsync(t => func(t.Item1, t.Item2, t.Item3, t.Item4, t.Item5, t.Item6));
+        public static async ValueTask<Result<R, E>> ApplyAsync<T, U, V, W, X, Y, Z, R, E>(this (Task<Result<T, E>>, Task<Result<U, E>>, Task<Result<V, E>>, Task<Result<W, E>>, Task<Result<X, E>>, Task<Result<Y, E>>, Task<Result<Z,E>>) results, Func<T, U, V, W, X, Y, Z, Task<R>> func)
+            => await (await results.Item1, await results.Item2, await results.Item3, await results.Item4, await results.Item5, await results.Item6, await results.Item7).Sequence().SelectAsync(t => func(t.Item1, t.Item2, t.Item3, t.Item4, t.Item5, t.Item6, t.Item7));
+        public static async ValueTask<Result<R, E>> ApplyAsync<T, U, R, E>(this (ValueTask<Result<T, E>>, ValueTask<Result<U, E>>) results, Func<T, U, Task<R>> func)
+            => await (await results.Item1, await results.Item2).Sequence().SelectAsync(t => func(t.Item1, t.Item2));
+        public static async ValueTask<Result<R, E>> ApplyAsync<T, U, V, R, E>(this (ValueTask<Result<T, E>>, ValueTask<Result<U, E>>, ValueTask<Result<V, E>>) results, Func<T, U, V, Task<R>> func)
+            => await (await results.Item1, await results.Item2, await results.Item3).Sequence().SelectAsync(t => func(t.Item1, t.Item2, t.Item3));
+        public static async ValueTask<Result<R, E>> ApplyAsync<T, U, V, W, R, E>(this (ValueTask<Result<T, E>>, ValueTask<Result<U, E>>, ValueTask<Result<V, E>>, ValueTask<Result<W, E>>) results, Func<T, U, V, W, Task<R>> func)
+            => await (await results.Item1, await results.Item2, await results.Item3, await results.Item4).Sequence().SelectAsync(t => func(t.Item1, t.Item2, t.Item3, t.Item4));
+        public static async ValueTask<Result<R, E>> ApplyAsync<T, U, V, W, X, R, E>(this (ValueTask<Result<T, E>>, ValueTask<Result<U, E>>, ValueTask<Result<V, E>>, ValueTask<Result<W, E>>, ValueTask<Result<X, E>>) results, Func<T, U, V, W, X, Task<R>> func)
+            => await (await results.Item1, await results.Item2, await results.Item3, await results.Item4, await results.Item5).Sequence().SelectAsync(t => func(t.Item1, t.Item2, t.Item3, t.Item4, t.Item5));
+        public static async ValueTask<Result<R, E>> ApplyAsync<T, U, V, W, X, Y, R, E>(this (ValueTask<Result<T, E>>, ValueTask<Result<U, E>>, ValueTask<Result<V, E>>, ValueTask<Result<W, E>>, ValueTask<Result<X, E>>, ValueTask<Result<Y, E>>) results, Func<T, U, V, W, X, Y, Task<R>> func)
+            => await (await results.Item1, await results.Item2, await results.Item3, await results.Item4, await results.Item5, await results.Item6).Sequence().SelectAsync(t => func(t.Item1, t.Item2, t.Item3, t.Item4, t.Item5, t.Item6));
+        public static async ValueTask<Result<R, E>> ApplyAsync<T, U, V, W, X, Y, Z, R, E>(this (ValueTask<Result<T, E>>, ValueTask<Result<U, E>>, ValueTask<Result<V, E>>, ValueTask<Result<W, E>>, ValueTask<Result<X, E>>, ValueTask<Result<Y, E>>, ValueTask<Result<Z, E>>) results, Func<T, U, V, W, X, Y, Z, Task<R>> func)
+            => await (await results.Item1, await results.Item2, await results.Item3, await results.Item4, await results.Item5, await results.Item6, await results.Item7).Sequence().SelectAsync(t => func(t.Item1, t.Item2, t.Item3, t.Item4, t.Item5, t.Item6, t.Item7));
+
         public static ValueTask<Result<U, E>> BindAsync<T, U, E>(this Result<T, E> result, Func<T, Task<Result<U, E>>> f)
+        {
+            var res = ForError<E>();
+            return result.Switch<ValueTask<Result<U, E>>>(async t => await f(t), e => new ValueTask<Result<U, E>>(res.Failure<U>(e)));
+        }
+        public static ValueTask<Result<U, E>> BindAsyncValue<T, U, E>(this Result<T, E> result, Func<T, ValueTask<Result<U, E>>> f)
         {
             var res = ForError<E>();
             return result.Switch<ValueTask<Result<U, E>>>(async t => await f(t), e => new ValueTask<Result<U, E>>(res.Failure<U>(e)));
@@ -297,9 +353,63 @@ namespace Biz.Morsink.Results
         public static T? GetOrNullValue<T, E>(this Result<T, E> result)
             where T : struct
             => result.Switch<T?>(s => s, _ => default);
+        public static T GetOrDefault<T, E>(this Result<T, E> result, T @default = default)
+            => result.Switch(v => v, _ => @default);
+        public static bool TryGetValue<T, E>(this Result<T, E> result, [NotNullWhen(returnValue: true)] out T? val)
+            where T : class
+        {
+            if (result is ISuccess<T> suc)
+            {
+                val = suc.Value;
+                return true;
+            }
+            else
+            {
+                val = default;
+                return false;
+            }
+        }
+
         public static Result<T, E> ToResult<T, E>(this IResult<T, E> result)
             => result as Result<T, E>
             ?? result.Switch<Result<T, E>>(s => new Result<T, E>.Success(s), e => new Result<T, E>.Failure(e));
+
+        public static Result<T, F> SetError<T, E, F>(this Result<T, E> result, F error)
+            => result.SelectError(_ => error);
+
+        public static Result<T, string> FirstToResult<T>(this IEnumerable<T> src)
+        {
+            var res = For<T, string>();
+            foreach (var x in src)
+                return res.Success(x);
+            return res.Failure("Sequence is empty, element not found.");
+        }
+        public static Result<T, string> ParseEnum<T>(this string str, bool caseSensitive = true)
+            where T : Enum
+        {
+            var res = For<T, string>();
+            if (Enum.TryParse(typeof(T), str, out var result))
+                return res.Success((T)result);
+            return res.Failure("Cannot parse enum value.");
+        }
+        public delegate bool TryParseDelegateCls<T>(string val, [NotNullWhen(returnValue: true)] out T? output) where T : class;
+        public delegate bool TryParseDelegateStr<T>(string val, [NotNullWhen(returnValue: true)] out T? output) where T : struct;
+        public static Result<T, string> ParseResult<T>(string val, TryParseDelegateCls<T> tp)
+            where T : class
+        {
+            var res = For<T, string>();
+            if (tp(val, out var result))
+                return res.Success(result);
+            return res.Failure("Parse failure.");
+        }
+        public static Result<T, string> ParseResult<T>(string val, TryParseDelegateStr<T> tp)
+            where T : struct
+        {
+            var res = For<T, string>();
+            if (tp(val, out var result))
+                return res.Success(result.Value);
+            return res.Failure("Parse failure.");
+        }
     }
     public abstract class Result<T, E> : IResult<T, E>
     {
