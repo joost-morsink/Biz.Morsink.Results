@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using System.Linq;
 
 namespace Biz.Morsink.Results.Errors
 {
@@ -32,7 +33,7 @@ namespace Biz.Morsink.Results.Errors
             => new ErrorKey(Parts.Push(part));
 
         public override string ToString()
-            => string.Join(".", PartToString(Parts));
+            => string.Join(".", Parts.Select(PartToString));
 
         private static string PartToString(object part)
         {

@@ -1,6 +1,6 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Biz.Morsink.Results;
-using System;
+using Biz.Morsink.Results.Errors;
 
 namespace Biz.Morsink.Results.Test
 {
@@ -15,22 +15,29 @@ namespace Biz.Morsink.Results.Test
             res = IsOdd(5);
             res.AssertSuccess(v => Assert.AreEqual(5, v));
         }
-
+        
         public Result<int, string> IsOdd(int i)
         {
             var res = Result.For<int, string>();
             return i % 2 == 0 ? res.Failure("Number is not odd") : res.Success(i);
         }
-    }
-    public static class TestUtils
-    {
-        public static void AssertSuccess<T, E>(this Result<T, E> result, Action<T> act)
+
+        [TestMethod]
+        public void ErrorKeyTest()
         {
-            result.Act(act, e => Assert.Fail(e.ToString()));
+            var r = IsOdd(42).StringToError().Prefix("def").Prefix("abc");
+            r.AssertFailure(f =>
+            {
+                Assert.AreEqual(1, f.Count);
+                Assert.AreEqual("abc.def", f[0].Key.ToString());
+            });
+            r = IsOdd(42).StringToError().Prefix("abc","def");
+            r.AssertFailure(f =>
+            {
+                Assert.AreEqual(1, f.Count);
+                Assert.AreEqual("abc.def", f[0].Key.ToString());
+            });
         }
-        public static void AssertFailure<T, E>(this Result<T, E> result, Action<E> act)
-        {
-            result.Act(v => Assert.Fail($"Value ({v}) found, error expected"), act);
-        }
+        
     }
 }
