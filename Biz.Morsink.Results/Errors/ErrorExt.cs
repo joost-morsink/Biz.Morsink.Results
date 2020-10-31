@@ -26,5 +26,11 @@ namespace Biz.Morsink.Results.Errors
             => errors.Any() ? new Result<T, ErrorList>.Failure(new ErrorList(errors)) : creator();
         public static Result<T, ErrorList> StringToError<T>(this Result<T, string> result)
             => result.SelectError(e => new ErrorList(new[] { new Error(default, default, e) }));
+        public static Result<T, ErrorList> Failure<T>(this Result.ForTypes<T, ErrorList> @for, Error error)
+            => @for.Failure(new ErrorList(new[] { error }));
+        public static Result<T, ErrorList> Failure<T>(this Result.ForTypes<T, ErrorList> @for, ErrorKey key, string? code, IErrorMessage message)
+            => @for.Failure(new Error(key, code, message));
+        public static Result<T, ErrorList> Failure<T>(this Result.ForTypes<T, ErrorList> @for, ErrorKey key, string? code, ErrorMessage message)
+            => @for.Failure(new Error(key, code, message));
     }
 }

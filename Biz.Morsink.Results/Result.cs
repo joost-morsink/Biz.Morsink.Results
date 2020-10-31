@@ -414,6 +414,7 @@ namespace Biz.Morsink.Results
     public abstract class Result<T, E> : IResult<T, E>
     {
         private Result() { }
+        public abstract bool IsSuccess { get; }
         public abstract Result<U, E> Select<U>(Func<T, U> f);
         public abstract Result<U, E> SelectMany<U>(Func<T, Result<U, E>> f);
         public abstract Result<V, E> SelectMany<U, V>(Func<T, Result<U, E>> f, Func<T, U, V> g);
@@ -422,6 +423,8 @@ namespace Biz.Morsink.Results
         public abstract Result<T, E> Where(Func<T, bool> predicate, Func<E> errorCreator);
         public abstract R Switch<R>(Func<T, R> onSuccess, Func<E, R> onError);
         public abstract void Act(Action<T> onSuccess, Action<E> onError);
+        public abstract R SwitchUntyped<R>(Func<ISuccess,R> onSuccess, Func<IFailure, R> onError);
+        public abstract void ActUntyped(Action<ISuccess> onSuccess, Action<IFailure> onError);
 
         public class Success : Result<T, E>, ISuccess<T>
         {
@@ -431,6 +434,7 @@ namespace Biz.Morsink.Results
             }
 
             public T Value { get; }
+            public override bool IsSuccess => true;
             public override Result<U, E> Select<U>(Func<T, U> f)
                 => new Result<U, E>.Success(f(Value));
             public override Result<U, E> SelectMany<U>(Func<T, Result<U, E>> f)
@@ -447,6 +451,10 @@ namespace Biz.Morsink.Results
                 => onSuccess(Value);
             public override R Switch<R>(Func<T, R> onSuccess, Func<E, R> onError)
                 => onSuccess(Value);
+            public override R SwitchUntyped<R>(Func<ISuccess, R> onSuccess, Func<IFailure, R> onError)
+                => onSuccess(this);
+            public override void ActUntyped(Action<ISuccess> onSuccess, Action<IFailure> onError)
+                => onSuccess(this);
         }
         public class Failure : Result<T, E>, IFailure<E>
         {
@@ -457,6 +465,7 @@ namespace Biz.Morsink.Results
 
             public E Error { get; }
 
+            public override bool IsSuccess => false;
             public override Result<U, E> Select<U>(Func<T, U> f)
                 => new Result<U, E>.Failure(Error);
             public override Result<U, E> SelectMany<U>(Func<T, Result<U, E>> f)
@@ -473,6 +482,10 @@ namespace Biz.Morsink.Results
                 => onError(Error);
             public override void Act(Action<T> onSuccess, Action<E> onError)
                 => onError(Error);
+            public override R SwitchUntyped<R>(Func<ISuccess, R> onSuccess, Func<IFailure, R> onError)
+                => onError(this);
+            public override void ActUntyped(Action<ISuccess> onSuccess, Action<IFailure> onError)
+                => onError(this);
         }
     }
 }

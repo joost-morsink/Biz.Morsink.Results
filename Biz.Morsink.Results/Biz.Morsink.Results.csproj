@@ -5,7 +5,7 @@
     <LangVersion>8</LangVersion>
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <VersionPrefix>0.1.1</VersionPrefix>
+    <VersionPrefix>0.2.0</VersionPrefix>
     <PackageId>Biz.Morsink.Results</PackageId>
     <Description>A result class and utility for failures.</Description>
     <PackageProjectUrl>https://github.com/joost-morsink/Biz.Morsink.Results</PackageProjectUrl>
