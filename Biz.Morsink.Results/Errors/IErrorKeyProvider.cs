@@ -1,7 +1,6 @@
-﻿namespace Biz.Morsink.Results.Errors
+﻿namespace Biz.Morsink.Results.Errors;
+
+public interface IErrorKeyProvider
 {
-    public interface IErrorKeyProvider
-    {
-        string ErrorKey { get; }
-    }
+    string ErrorKey { get; }
 }

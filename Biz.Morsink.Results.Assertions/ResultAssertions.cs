@@ -1,6 +1,4 @@
-﻿using System;
-using FluentAssertions.Primitives;
-using Biz.Morsink.Results;
+﻿using FluentAssertions.Primitives;
 using FluentAssertions;
 using FluentAssertions.Execution;
 using System.Linq;
@@ -10,11 +8,11 @@ namespace Biz.Morsink.Results.Assertions
     public static class ResultAssertions
     {
         public static ResultAssertions<T, F> Should<T, F>(this Result<T, F> subject)
-            => new ResultAssertions<T, F>(subject);
+            => new (subject);
     }
     public class ResultAssertions<T, F> : ReferenceTypeAssertions<Result<T, F>, ResultAssertions<T, F>>
     {
-        public ResultAssertions(Result<T, F> subject) : base()
+        public ResultAssertions(Result<T, F> subject) 
         {
             Subject = subject;
         }

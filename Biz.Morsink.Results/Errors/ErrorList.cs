@@ -1,38 +1,32 @@
-﻿using System;
+﻿namespace Biz.Morsink.Results.Errors;
+
 using System.Collections;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Linq;
-
-namespace Biz.Morsink.Results.Errors
+public readonly struct ErrorList : IReadOnlyList<Error>, IErrorAggregable<ErrorList>
 {
-    public struct ErrorList : IReadOnlyList<Error>, IErrorAggregable<ErrorList>
+    private readonly ImmutableList<Error> _errors;
+
+    private ErrorList(ImmutableList<Error> errors)
     {
-        private readonly ImmutableList<Error> _errors;
-
-        private ErrorList(ImmutableList<Error> errors)
-        {
-            _errors = errors;
-        }
-        public ErrorList(IEnumerable<Error> errors)
-        {
-            _errors = errors.ToImmutableList();
-        }
-
-        public Error this[int index] => _errors[index];
-        public int Count => _errors.Count;
-
-        public ErrorList Aggregate(ErrorList error)
-            => new ErrorList(_errors.AddRange(error._errors));
-
-        public IEnumerator<Error> GetEnumerator()
-            => _errors.GetEnumerator();
-        IEnumerator IEnumerable.GetEnumerator()
-            => GetEnumerator();
-
-        public ErrorList Select(Func<Error, Error> manipulate)
-            => new ErrorList(_errors.Select(manipulate));
-        public override string ToString()
-            => string.Join(Environment.NewLine, _errors);
+        _errors = errors;
     }
+    public ErrorList(IEnumerable<Error> errors)
+    {
+        _errors = errors.ToImmutableList();
+    }
+
+    public Error this[int index] => _errors[index];
+    public int Count => _errors.Count;
+
+    public ErrorList Aggregate(ErrorList error)
+        => new (_errors.AddRange(error._errors));
+
+    public IEnumerator<Error> GetEnumerator()
+        => _errors.GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator()
+        => GetEnumerator();
+
+    public ErrorList Select(Func<Error, Error> manipulate)
+        => new (_errors.Select(manipulate));
+    public override string ToString()
+        => string.Join(Environment.NewLine, _errors);
 }
