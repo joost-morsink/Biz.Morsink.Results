@@ -1,5 +1,7 @@
+using Biz.Morsink.Results.Assertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Biz.Morsink.Results.Errors;
+using FluentAssertions;
 
 namespace Biz.Morsink.Results.Test
 {
@@ -10,9 +12,10 @@ namespace Biz.Morsink.Results.Test
         public void SimpleTest()
         {
             var res = IsOdd(42);
-            res.AssertFailure(msg => Assert.AreEqual("Number is not odd", msg));
+            res.Should().BeFailure()
+                .Which.Should().Be("Number is not odd");
             res = IsOdd(5);
-            res.AssertSuccess(v => Assert.AreEqual(5, v));
+            res.Should().BeSuccess().Which.Should().Be(5);
         }
         
         public Result<int, string> IsOdd(int i)
@@ -25,18 +28,14 @@ namespace Biz.Morsink.Results.Test
         public void ErrorKeyTest()
         {
             var r = IsOdd(42).StringToError().Prefix("def").Prefix("abc");
-            r.AssertFailure(f =>
-            {
-                Assert.AreEqual(1, f.Count);
-                Assert.AreEqual("abc.def", f[0].Key.ToString());
-            });
+            r.Should().BeFailure()
+                .Which.Should().HaveCount(1)
+                .And.ContainSingle(x => x.Key.ToString() == "abc.def");
+
             r = IsOdd(42).StringToError().Prefix("abc","def");
-            r.AssertFailure(f =>
-            {
-                Assert.AreEqual(1, f.Count);
-                Assert.AreEqual("abc.def", f[0].Key.ToString());
-            });
+            r.Should().BeFailure()
+                .Which.Should().HaveCount(1)
+                .And.ContainSingle(x => x.Key.ToString() == "abc.def");
         }
-        
     }
 }

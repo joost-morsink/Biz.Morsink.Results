@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <LangVersion>preview</LangVersion>
+        <EnablePreviewFeatures>true</EnablePreviewFeatures>
+        <VersionPrefix>0.1.0</VersionPrefix>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Biz.Morsink.Results\Biz.Morsink.Results.csproj" />
+    </ItemGroup>
+
+</Project>

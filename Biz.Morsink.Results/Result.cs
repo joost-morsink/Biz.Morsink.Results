@@ -26,7 +26,8 @@ public static class Result
         => result.SelectMany(f);
     public static Result<T, E> BindIgnore<T, U, E>(this Result<T, E> result, Func<T, Result<U, E>> f)
         => result.Bind(t => f(t).Select(_ => t));
-
+    public static Result<T, E> BindError<T, E>(this Result<T, E> result, Func<E, Result<T, E>> f)
+        => result.Switch(s => s, e => f(e));
     public static Result<R, E> Select<T, U, R, E>(this Result<(T, U), E> result, Func<T, U, R> f)
         => result.Select(v => f(v.Item1, v.Item2));
     public static Result<R, E> Select<T, U, V, R, E>(this Result<(T, U, V), E> result, Func<T, U, V, R> f)

@@ -41,4 +41,6 @@ public static class ErrorExt
         => @for.Failure(new Error(key, code, message));
     public static Result<T, ErrorList> Failure<T>(this Result.ForTypes<T, ErrorList> @for, ErrorKey key, string? code, ErrorMessage message)
         => @for.Failure(new Error(key, code, message));
+    public static ErrorList ToList(this Error singleError)
+        => new (new[] { singleError });
 }

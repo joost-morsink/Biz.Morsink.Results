@@ -7,6 +7,15 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Biz.Morsink.Results.Test", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Biz.Morsink.Results.Assertions", "Biz.Morsink.Results.Assertions\Biz.Morsink.Results.Assertions.csproj", "{51BE0B2F-78F0-4746-B338-0390A2EE1CB8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Biz.Morsink.ValidObjects", "Biz.Morsink.ValidObjects\Biz.Morsink.ValidObjects.csproj", "{2244DBF6-1C7D-44D4-AFCE-B3EC23A31B85}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Biz.Morsink.ValidObjects.Test", "Biz.Morsink.ValidObjects.Test\Biz.Morsink.ValidObjects.Test.csproj", "{CAAF9177-FA36-414E-8402-66D1B9FD38E0}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{6F749FD2-29CA-4992-A925-FAFB4FFC1CC9}"
+	ProjectSection(SolutionItems) = preProject
+		Directory.Build.props = Directory.Build.props
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -25,5 +34,13 @@ Global
 		{51BE0B2F-78F0-4746-B338-0390A2EE1CB8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{51BE0B2F-78F0-4746-B338-0390A2EE1CB8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{51BE0B2F-78F0-4746-B338-0390A2EE1CB8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2244DBF6-1C7D-44D4-AFCE-B3EC23A31B85}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2244DBF6-1C7D-44D4-AFCE-B3EC23A31B85}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2244DBF6-1C7D-44D4-AFCE-B3EC23A31B85}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2244DBF6-1C7D-44D4-AFCE-B3EC23A31B85}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CAAF9177-FA36-414E-8402-66D1B9FD38E0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CAAF9177-FA36-414E-8402-66D1B9FD38E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CAAF9177-FA36-414E-8402-66D1B9FD38E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CAAF9177-FA36-414E-8402-66D1B9FD38E0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

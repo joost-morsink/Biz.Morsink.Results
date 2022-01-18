@@ -1,9 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <VersionPrefix>0.1.1</VersionPrefix>
     <PackageId>Biz.Morsink.Results.Assertions</PackageId>
     <Description>A Fluent Assertions companion for Biz.Morsink.Results.</Description>
@@ -11,14 +8,10 @@
     <RootNamespace>Biz.Morsink.Results.Assertions</RootNamespace>
     <Copyright>(C) 2020 Joost W. Morsink</Copyright>
     <PackageTags>Results</PackageTags>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <RepositoryType>Git</RepositoryType>
-    <RepositoryUrl>https://github.com/joost-morsink/Biz.Morsink.Results.git</RepositoryUrl>
-
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="FluentAssertions" Version="[5.0.0,)" />
+    <PackageReference Include="FluentAssertions" Version="6.3.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Biz.Morsink.Results\Biz.Morsink.Results.csproj" />

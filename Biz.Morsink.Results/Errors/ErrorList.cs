@@ -29,4 +29,9 @@ public readonly struct ErrorList : IReadOnlyList<Error>, IErrorAggregable<ErrorL
         => new (_errors.Select(manipulate));
     public override string ToString()
         => string.Join(Environment.NewLine, _errors);
+
+    public static implicit operator ErrorList(Error error)
+        => new (new[] { error });
+    public static ErrorList Create(params Error[] errors)
+        => new (errors);
 }

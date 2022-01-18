@@ -12,9 +12,8 @@ namespace Biz.Morsink.Results.Assertions
     }
     public class ResultAssertions<T, F> : ReferenceTypeAssertions<Result<T, F>, ResultAssertions<T, F>>
     {
-        public ResultAssertions(Result<T, F> subject) 
+        public ResultAssertions(Result<T, F> subject) : base(subject)
         {
-            Subject = subject;
         }
         public AndWhichConstraint<ResultAssertions<T, F>, T> BeSuccess()
         {
