@@ -7,7 +7,7 @@ namespace Biz.Morsink.ValidObjects.Test;
 
 using NonEmptyString = Valid<string, NotEmpty>;
 using ZipCodeString = Valid<string, DutchZipCode>;
-using Natural = Valid<int, MinValue<Zero>>;
+using NaturalNumber = Valid<int, MinValue<Zero>>;
 
 public class DutchZipCode : RegexConstraint
 {
@@ -16,6 +16,7 @@ public class DutchZipCode : RegexConstraint
     {
     }
 }
+[Generate]
 public partial class Address
     #if !GENERATE
     : IValidObject<Address, Address.Dto>, IHasStaticValidator<Address, Address.Dto>
@@ -51,6 +52,7 @@ public partial class Address
         => new (Street.GetDto(), HouseNumber.GetDto(), ZipCode.GetDto(), City.GetDto());
     #endif
 }
+[Generate]
 public partial class Person
     #if !GENERATE
     : IValidObject<Person, Person.Dto>, IHasStaticValidator<Person, Person.Dto>
@@ -58,7 +60,7 @@ public partial class Person
 {
     #if !GENERATE
     public static IObjectValidator<Person, Dto> Validator { get; } = ObjectValidator.For<Person, Dto>();
-    private Person(NonEmptyString firstName, NonEmptyString lastName, Natural age, ImmutableList<Address> addresses)
+    private Person(NonEmptyString firstName, NonEmptyString lastName, NaturalNumber age, ImmutableList<Address> addresses)
     {
         FirstName = firstName;
         LastName = lastName;
@@ -69,8 +71,8 @@ public partial class Person
     
     public NonEmptyString FirstName { get; }
     public NonEmptyString LastName { get; }
-    public Natural Age { get; }
-    public ImmutableList<Address> Addresses { get; }
+    public NaturalNumber Age { get; }
+    public Address Address { get; }
     
     #if !GENERATE
     public Dto GetDto()
@@ -81,10 +83,41 @@ public partial class Person
         public Result<Person, ErrorList> TryCreate()
             => (NonEmptyString.TryCreate(FirstName).Prefix(nameof(FirstName)),
                     NonEmptyString.TryCreate(LastName).Prefix(nameof(LastName)),
-                    Natural.TryCreate(Age).Prefix(nameof(Age)),
+                    NaturalNumber.TryCreate(Age).Prefix(nameof(Age)),
                     Address.Validator.ToListValidator().TryCreate(Addresses).Prefix(nameof(Addresses)))
                 .Apply((firstName, lastName, age, addresses) =>
                     new Person(firstName, lastName, age, addresses));
     }
     #endif
 }
+
+
+public struct Natural
+{
+    private readonly Valid<int, MinValue<Zero>> _value;
+    public Natural(Valid<int, MinValue<Zero>> value)
+    {
+        _value = value;
+    }
+    public int Value => _value.Value;
+    public static implicit operator Natural(Valid<int, MinValue<Zero>> value)
+        => new (value);
+    public static implicit operator Valid<int, MinValue<Zero>>(Natural value)
+        => value._value;
+    public static implicit operator int(Natural value)
+        => value.Value;
+    
+    public static Natural operator +(Natural x, Natural y)
+        => new (Valid<int, MinValue<Zero>>.TryCreate(x.Value + y.Value).GetOrThrow());
+    public static Natural operator *(Natural x, Natural y)
+        => new (Valid<int, MinValue<Zero>>.TryCreate(x.Value + y.Value).GetOrThrow());
+}
+
+// [Generate]
+// public partial class GenerationTest
+// {
+//     public void Test()
+//     {
+//         Console.WriteLine(Hallo);
+//     }
+// }

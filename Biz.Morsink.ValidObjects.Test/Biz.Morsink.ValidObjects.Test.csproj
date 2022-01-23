@@ -2,19 +2,21 @@
     <PropertyGroup>
         <IsPackable>false</IsPackable>
         <EnablePreviewFeatures>true</EnablePreviewFeatures>
-        <DefineConstants><!--GENERATE--></DefineConstants>
+        <DefineConstants>GENERATE</DefineConstants>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="FluentAssertions" Version="6.3.0" />
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.11.0" />
-        <PackageReference Include="NUnit" Version="3.13.2" />
-        <PackageReference Include="NUnit3TestAdapter" Version="4.2.0" />
-        <PackageReference Include="coverlet.collector" Version="3.1.0" />
+        <PackageReference Include="FluentAssertions" Version="6.3.0"/>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.11.0"/>
+        <PackageReference Include="NUnit" Version="3.13.2"/>
+        <PackageReference Include="NUnit3TestAdapter" Version="4.2.0"/>
+        <PackageReference Include="coverlet.collector" Version="3.1.0"/>
     </ItemGroup>
     <ItemGroup>
-        <ProjectReference Include="..\Biz.Morsink.Results.Assertions\Biz.Morsink.Results.Assertions.csproj" />
-        <ProjectReference Include="..\Biz.Morsink.ValidObjects\Biz.Morsink.ValidObjects.csproj" />
+        <ProjectReference Include="..\Biz.Morsink.Results.Assertions\Biz.Morsink.Results.Assertions.csproj"/>
+        <ProjectReference Include="..\Biz.Morsink.ValidObjects\Biz.Morsink.ValidObjects.csproj"/>
     </ItemGroup>
-
+    <ItemGroup>
+        <ProjectReference Include="..\Biz.Morsink.ValidObjects.Generator\Biz.Morsink.ValidObjects.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true"/>
+    </ItemGroup>
 </Project>

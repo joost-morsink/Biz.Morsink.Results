@@ -16,6 +16,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Directory.Build.props = Directory.Build.props
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Biz.Morsink.ValidObjects.Generator", "Biz.Morsink.ValidObjects.Generator\Biz.Morsink.ValidObjects.Generator.csproj", "{28E7D595-3657-4E73-9D28-FF580F4C418E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Biz.Morsink.ValidObjects.Generator.Playground", "Biz.Morsink.ValidObjects.Generator.Playground\Biz.Morsink.ValidObjects.Generator.Playground.csproj", "{E40413C3-662E-4950-B419-5A6DAA1A2C71}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -42,5 +46,13 @@ Global
 		{CAAF9177-FA36-414E-8402-66D1B9FD38E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CAAF9177-FA36-414E-8402-66D1B9FD38E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CAAF9177-FA36-414E-8402-66D1B9FD38E0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{28E7D595-3657-4E73-9D28-FF580F4C418E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{28E7D595-3657-4E73-9D28-FF580F4C418E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{28E7D595-3657-4E73-9D28-FF580F4C418E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{28E7D595-3657-4E73-9D28-FF580F4C418E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E40413C3-662E-4950-B419-5A6DAA1A2C71}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E40413C3-662E-4950-B419-5A6DAA1A2C71}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E40413C3-662E-4950-B419-5A6DAA1A2C71}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E40413C3-662E-4950-B419-5A6DAA1A2C71}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
