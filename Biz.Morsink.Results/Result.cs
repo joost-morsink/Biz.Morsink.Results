@@ -205,6 +205,22 @@ public static class Result
             return result;
         }
     }
+    public static IEnumerable<(K, V)> DropFailures<K, V, E>(this IEnumerable<(K, Result<V, E>)> results, Action<E>? onError = null)
+    {
+        foreach(var x in results)
+            if (x.Item2 is ISuccess<V> s)
+                yield return (x.Item1, s.Value);
+            else if (onError != null && x.Item2 is IFailure<E> f)
+                onError(f.Error);
+    }
+    public static IEnumerable<KeyValuePair<K, V>> DropFailures<K, V, E>(this IEnumerable<KeyValuePair<K, Result<V, E>>> results, Action<E>? onError = null)
+    {
+        foreach(var x in results)
+            if (x.Value is ISuccess<V> s)
+                yield return new (x.Key, s.Value);
+            else if (onError != null && x.Value is IFailure<E> f)
+                onError(f.Error);
+    }
 
     public static Result<ImmutableArray<T>, E> Sequence<T, E>(this IEnumerable<Result<T, E>> results, Func<E, E, E>? errorAggregator = null)
     {
@@ -229,6 +245,36 @@ public static class Result
             return failures.Select(f => f.Error).Aggregate(errorAggregator ?? ErrorAggregation.Get<E>());
         else
             return successes.Select(s => s.Value).ToImmutableHashSet();
+    }
+    public static Result<ImmutableDictionary<K, V>, E> SequenceDictionary<K, V, E>(this IEnumerable<KeyValuePair<K, Result<V, E>>> results,
+                                                                                Func<E, E, E>? errorAggregator = null)
+        where K : notnull
+    {
+        var successes = new List<(K, V)>();
+        var failures = new List<E>();
+        foreach (var x in results)
+        {
+            x.Value.Act(s => successes.Add((x.Key, s)), f => failures.Add(f));
+        }
+        if (failures.Count == 0)
+            return successes.ToImmutableDictionary(x => x.Item1, x => x.Item2);
+        else
+            return failures.Aggregate(errorAggregator ?? ErrorAggregation.Get<E>());
+    }
+    public static Result<ImmutableDictionary<K, V>, E> SequenceDictionary<K, V, E>(this IEnumerable<(K, Result<V, E>)> results,
+                                                                                   Func<E, E, E>? errorAggregator = null)
+        where K : notnull
+    {
+        var successes = new List<(K, V)>();
+        var failures = new List<E>();
+        foreach (var x in results)
+        {
+            x.Item2.Act(s => successes.Add((x.Item1, s)), f => failures.Add(f));
+        }
+        if (failures.Count == 0)
+            return successes.ToImmutableDictionary(x => x.Item1, x => x.Item2);
+        else
+            return failures.Aggregate(errorAggregator ?? ErrorAggregation.Get<E>());
     }
 
     public static Result<(T, U), E> Sequence<T, U, E>(this (Result<T, E>, Result<U, E>) result, Func<E, E, E>? errorAggregator = null)
