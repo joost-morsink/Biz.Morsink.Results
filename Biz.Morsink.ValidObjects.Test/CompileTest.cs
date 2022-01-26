@@ -16,6 +16,13 @@ public class DutchZipCode : RegexConstraint
     {
     }
 }
+public class Identifier : RegexConstraint
+{
+    public static Identifier Instance { get; } = new ();
+    public Identifier() : base("^[A-Za-z_][A-Za-z_0-9]*")
+    {
+    }
+}
 [Generate]
 public partial class Address
     #if !GENERATE
@@ -73,7 +80,7 @@ public partial class Person
     public NonEmptyString LastName { get; }
     public NaturalNumber Age { get; }
     public ImmutableList<Address> Addresses { get; }
-    
+    public IImmutableSet<Valid<string, Identifier>> Tags { get; }
     #if !GENERATE
     public Dto GetDto()
         => new (FirstName.GetDto(), LastName.GetDto(), Age.GetDto(), Address.Validator.ToListValidator().GetDto(Addresses));

@@ -239,13 +239,17 @@ public static class Result
             return successes.Select(s => s.Value).ToImmutableList();
     }
     public static Result<IImmutableSet<T>, E> SequenceSet<T, E>(this IEnumerable<Result<T, E>> results, Func<E, E, E>? errorAggregator = null)
+        => results.SequenceSet(ts => (IImmutableSet<T>)ts.ToImmutableHashSet(), errorAggregator);
+    public static Result<C, E> SequenceSet<T, E, C>(this IEnumerable<Result<T, E>> results, Func<IEnumerable<T>, C> collector, Func<E, E, E>? errorAggregator = null)
+        where C: IImmutableSet<T>
     {
         var (successes, failures) = results.Split();
         if (failures.Count > 0)
             return failures.Select(f => f.Error).Aggregate(errorAggregator ?? ErrorAggregation.Get<E>());
         else
-            return successes.Select(s => s.Value).ToImmutableHashSet();
+            return collector(successes.Select(s => s.Value));
     }
+
     public static Result<ImmutableDictionary<K, V>, E> SequenceDictionary<K, V, E>(this IEnumerable<KeyValuePair<K, Result<V, E>>> results,
                                                                                 Func<E, E, E>? errorAggregator = null)
         where K : notnull

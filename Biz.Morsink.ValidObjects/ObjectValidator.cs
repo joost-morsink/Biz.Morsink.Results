@@ -73,19 +73,28 @@ public static class ObjectValidator
         public ImmutableList<Dto> GetDto(ImmutableList<Vo> validObjects)
             => validObjects.Select(vo => _baseValidator.GetDto(vo)).ToImmutableList();
     }
-    private class SetImpl<Vo, Dto> : IObjectValidator<IImmutableSet<Vo>, IImmutableSet<Dto>>
+    private class SetImpl<Vo, Dto, Svo, Sdto> : IObjectValidator<Svo, Sdto>
+        where Svo : IImmutableSet<Vo>
+        where Sdto : IImmutableSet<Dto>
     {
         private readonly IObjectValidator<Vo, Dto> _baseValidator;
         private readonly Func<Dto, object> _indexer;
-        public SetImpl(IObjectValidator<Vo, Dto> baseValidator, Func<Dto, object> indexer)
+        private readonly Func<IEnumerable<Vo>, Svo> _toVoSet;
+        private readonly Func<IEnumerable<Dto>, Sdto> _toDtoSet;
+
+        public SetImpl(IObjectValidator<Vo, Dto> baseValidator, Func<Dto, object> indexer, 
+                       Func<IEnumerable<Vo>, Svo> toVoSet,
+                       Func<IEnumerable<Dto>, Sdto> toDtoSet)
         {
             _baseValidator = baseValidator;
             _indexer = indexer;
+            _toVoSet = toVoSet;
+            _toDtoSet = toDtoSet;
         }
-        public Result<IImmutableSet<Vo>, ErrorList> TryCreate(IImmutableSet<Dto> dtos)
-            => dtos.Select((dto) => _baseValidator.TryCreate(dto).Prefix(_indexer(dto))).SequenceSet();
-        public IImmutableSet<Dto> GetDto(IImmutableSet<Vo> validObjects)
-            => validObjects.Select(vo => _baseValidator.GetDto(vo)).ToImmutableHashSet();
+        public Result<Svo, ErrorList> TryCreate(Sdto dtos)
+            => dtos.Select((dto) => _baseValidator.TryCreate(dto).Prefix(_indexer(dto))).SequenceSet(_toVoSet);
+        public Sdto GetDto(Svo validObjects)
+            => _toDtoSet(validObjects.Select(vo => _baseValidator.GetDto(vo)));
     }
     
     public static IObjectValidator<ImmutableList<Vo>, ImmutableList<Dto>> ToListValidator<Vo, Dto>(this IObjectValidator<Vo, Dto> baseValidator,
@@ -96,8 +105,26 @@ public static class ObjectValidator
         => baseValidator.ToListValidator((d, _) => d);
     public static IObjectValidator<IImmutableSet<Vo>, IImmutableSet<Dto>> ToSetValidator<Vo, Dto>(this IObjectValidator<Vo, Dto> baseValidator,
                                                                                                   Func<Dto, object> indexer)
-        => new SetImpl<Vo, Dto>(baseValidator, indexer);
+        => new SetImpl<Vo, Dto,IImmutableSet<Vo>, IImmutableSet<Dto>>(baseValidator, indexer,
+                ts => ts.ToImmutableHashSet(),
+                ts => ts.ToImmutableHashSet());
     public static IObjectValidator<IImmutableSet<Vo>, IImmutableSet<Dto>> ToSetValidator<Vo, Dto>(this IObjectValidator<Vo, Dto> baseValidator)
         where Dto : class
         => baseValidator.ToSetValidator(d => d);
+    public static IObjectValidator<ImmutableHashSet<Vo>, ImmutableHashSet<Dto>> ToHashSetValidator<Vo, Dto>(this IObjectValidator<Vo, Dto> baseValidator,
+                                                                                                  Func<Dto, object> indexer)
+        => new SetImpl<Vo, Dto,ImmutableHashSet<Vo>, ImmutableHashSet<Dto>>(baseValidator, indexer,
+            ts => ts.ToImmutableHashSet(),
+            ts => ts.ToImmutableHashSet());
+    public static IObjectValidator<ImmutableHashSet<Vo>, ImmutableHashSet<Dto>> ToHashSetValidator<Vo, Dto>(this IObjectValidator<Vo, Dto> baseValidator)
+        where Dto : class
+        => baseValidator.ToHashSetValidator(d => d);
+    public static IObjectValidator<ImmutableSortedSet<Vo>, ImmutableSortedSet<Dto>> ToSortedSetValidator<Vo, Dto>(this IObjectValidator<Vo, Dto> baseValidator,
+        Func<Dto, object> indexer)
+        => new SetImpl<Vo, Dto,ImmutableSortedSet<Vo>, ImmutableSortedSet<Dto>>(baseValidator, indexer,
+            ts => ts.ToImmutableSortedSet(),
+            ts => ts.ToImmutableSortedSet());
+    public static IObjectValidator<ImmutableSortedSet<Vo>, ImmutableSortedSet<Dto>> ToSortedSetValidator<Vo, Dto>(this IObjectValidator<Vo, Dto> baseValidator)
+        where Dto : class
+        => baseValidator.ToSortedSetValidator(d => d);
 }
