@@ -1,6 +1,4 @@
 ﻿using System.Collections.Immutable;
-using System.Net.Mime;
-using Biz.Morsink.ValidObjects.Constraints;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -16,7 +14,7 @@ public class Generator : IIncrementalGenerator
                 (syntaxNode, _) => syntaxNode is ClassDeclarationSyntax { AttributeLists.Count: > 0 },
                 (generatorContext, cancel) => GetGenerateTypes(generatorContext, cancel, (ClassDeclarationSyntax)generatorContext.Node))
             .Where(x => x is not null)
-            .Select((x,_) => (ClassDeclarationSyntax) x!);
+            .Select((x,_) => x!);
         var ttg = context.CompilationProvider.Combine(classes.Collect())
             .Select((x, cancel) => GetTypesToGenerate(x.Left, x.Right, cancel));
         
@@ -39,16 +37,17 @@ public class Generator : IIncrementalGenerator
             cancel.ThrowIfCancellationRequested();
             
             var sm = compilation.GetSemanticModel(cls.SyntaxTree);
-            if (sm.GetDeclaredSymbol(cls) is not INamedTypeSymbol symbol)
-                continue;
-            var propsymbols
-                = cls.Members.OfType<PropertyDeclarationSyntax>()
-                    .Select(pds => sm.GetDeclaredSymbol(pds))
-                    .Where(ps => ps is not null && ps.SetMethod is null && ps.GetMethod is not null)
-                    .Cast<IPropertySymbol>()
-                    .ToImmutableArray();
-            
-            builder.Add(new (symbol.ContainingNamespace.ToDisplayString(), symbol.Name, propsymbols));
+            if (sm.GetDeclaredSymbol(cls) is { } symbol)
+            {
+                var propsymbols
+                    = cls.Members.OfType<PropertyDeclarationSyntax>()
+                        .Select(pds => sm.GetDeclaredSymbol(pds))
+                        .Where(ps => ps is not null && ps.SetMethod is null && ps.GetMethod is not null)
+                        .Select(ps => ps!)
+                        .ToImmutableArray();
+
+                builder.Add(new (symbol.ContainingNamespace.ToDisplayString(), symbol.Name, propsymbols));
+            }
         }
         return builder.ToImmutable();
     }

@@ -1,11 +1,12 @@
-using System.Collections.Concurrent;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.CodeAnalysis;
 namespace Biz.Morsink.ValidObjects.Generator;
 
+[SuppressMessage("ReSharper", "RedundantDefaultMemberInitializer")]
 public record TypeToGenerate(string Namespace, string ClassName, ImmutableArray<IPropertySymbol> PropertySymbols)
 {
-    public ValidTypes ValidTypes { get; } = new ValidTypes();
+    public ValidTypes ValidTypes { get; } = new ();
     public IValidType GetValidType(int index)
         => GetValidType(PropertySymbols[index].Type);
     public IValidType GetValidType(ITypeSymbol type)

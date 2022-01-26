@@ -1,7 +1,6 @@
 ﻿using System.Collections.Immutable;
 using Biz.Morsink.Results;
 using Biz.Morsink.ValidObjects;
-using Biz.Morsink.ValidObjects.Constraints;
 using Biz.Morsink.ValidObjects.Generator;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -87,7 +86,7 @@ var generator = new Generator();
 var driver = CSharpGeneratorDriver.Create(generator);
 
 // Run the generation pass
-driver.RunGeneratorsAndUpdateCompilation(inputCompilation, out var outputCompilation, out var diagnostics);
+driver.RunGeneratorsAndUpdateCompilation(inputCompilation, out var outputCompilation, out _);
 
 
 var result = outputCompilation.Emit("test.exe");
