@@ -1,7 +1,7 @@
 using Microsoft.CodeAnalysis;
 namespace Biz.Morsink.ValidObjects.Generator;
 
-public class ValidType
+class ValidType : IValidType
 {
     public ValidType(ITypeSymbol type)
     {
@@ -27,6 +27,7 @@ public class ValidType
             ?? Type;
     }
     public ITypeSymbol Type { get; }
+    public string TypeName => Type.ToDisplayString();
     public ITypeSymbol RawType { get; }
     public string RawTypeName => GenerateAttribute != null ? $"{Type.ToDisplayString()}.Dto" : this.RawType.ToDisplayString();
     public INamedTypeSymbol? StaticValidator { get; }
@@ -46,6 +47,15 @@ public class ValidType
             : StaticValidator != null
                 ? $"{Type}.GetDto({name})"
                 : name;
+
+    public string ObjectValidator
+        => StaticValidator != null || GenerateAttribute != null
+            ? $"{Type}.Validator"
+            : FullInterface != null
+                ? $"ObjectValidator.For<{TypeName}, {RawTypeName}>()"
+                : VoInterface != null
+                    ? "(null)"
+                    : "null";
     
     public bool IsValidType => GenerateAttribute != null || !SymbolEqualityComparer.Default.Equals(Type, RawType);
     public string DefaultValueAssignment { get; } = "";

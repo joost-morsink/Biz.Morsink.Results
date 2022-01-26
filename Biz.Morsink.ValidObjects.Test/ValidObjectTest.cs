@@ -1,7 +1,5 @@
 using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
 namespace Biz.Morsink.ValidObjects.Test;
-
 
 public class ValidObjectTest
 {
@@ -40,13 +38,13 @@ public class ValidObjectTest
         var dto = new Person.Dto
         {
             FirstName = "Pietje", LastName = "Puk", Age = 44,
-            Address = new ()
+            Addresses = ImmutableList.Create(new Address.Dto
             {
                 Street = "Kalverstraat",
                 HouseNumber = "1",
                 ZipCode = "1111AA",
                 City = ""
-            }
+            })
         };
         dto.TryCreate().Should().BeFailure().Which.Should().HaveCount(1)
             .And.Contain(e => e.Key.ToString().EndsWith(nameof(Address.City)));
@@ -57,22 +55,23 @@ public class ValidObjectTest
         var dto = new Person.Dto
         {
             FirstName = "Pietje", LastName = "Puk", Age = 44,
-            Address = new ()
+            Addresses = ImmutableList.Create(new Address.Dto
             {
                 Street = "Kalverstraat",
                 HouseNumber = "1",
                 ZipCode = "1111AA",
                 City = "Amsterdam"
-            }
+            })
         };
         var person = dto.TryCreate();
         person.Should().BeSuccess().Which.Should().Match<Person>(
             p => p.FirstName.Value == dto.FirstName
                 && p.LastName.Value == dto.LastName
-                && p.Age.Value == dto.Age);
-        var address= person.Select(p => p.Address);
+                && p.Age.Value == dto.Age
+                && p.Addresses.Count == 1);
+        var address= person.Select(p => p.Addresses[0]);
         address.Should().BeSuccess().Which.Should().Match<Address>(a =>
-            !ReferenceEquals(a.GetDto(), dto.Address)
-            && a.GetDto().Equals(dto.Address));
+            !ReferenceEquals(a.GetDto(), dto.Addresses[0])
+            && a.GetDto().Equals(dto.Addresses[0]));
     }
 }

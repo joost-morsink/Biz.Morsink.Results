@@ -6,12 +6,27 @@ namespace Biz.Morsink.ValidObjects.Generator;
 public record TypeToGenerate(string Namespace, string ClassName, ImmutableArray<IPropertySymbol> PropertySymbols)
 {
     public ValidTypes ValidTypes { get; } = new ValidTypes();
-    public ValidType GetValidType(int index)
+    public IValidType GetValidType(int index)
         => GetValidType(PropertySymbols[index].Type);
-    public ValidType GetValidType(ITypeSymbol type)
+    public IValidType GetValidType(ITypeSymbol type)
         => ValidTypes.Get(type);
-    public IEnumerable<(IPropertySymbol property, ValidType validType)> GetProperties()
+    public IEnumerable<(IPropertySymbol property, IValidType validType)> GetProperties()
         => PropertySymbols.AsEnumerable().Select(ps => (ps, GetValidType(ps.Type)));
+    public string GetSource() 
+        => @$"
+namespace {Namespace};
+using Biz.Morsink.Results;
+using Biz.Morsink.Results.Errors;
+using Biz.Morsink.ValidObjects;
+
+partial class {ClassName} : IValidObject<{ClassName},{ClassName}.Dto>, IHasStaticValidator<{ClassName}, {ClassName}.Dto>
+{{
+{GetValidator()}
+{GetConstructor()}
+{GetGetDto()}
+{GetDto()}
+}}
+";
     public string GetConstructor()
         => @$"
     private {ClassName}({string.Join(", ", PropertySymbols.Select(ps => $"{ps.Type.ToDisplayString()} {ps.Name}"))})
@@ -55,5 +70,7 @@ public record TypeToGenerate(string Namespace, string ClassName, ImmutableArray<
         }
         return "ERROR";
     }
+    public string GetValidator()
+        => $"    public static IObjectValidator<{ClassName}, Dto> Validator {{ get; }} = ObjectValidator.For<{ClassName}, Dto>();";
     private static string letters = "tuvwxyz";
 }

@@ -72,7 +72,7 @@ public partial class Person
     public NonEmptyString FirstName { get; }
     public NonEmptyString LastName { get; }
     public NaturalNumber Age { get; }
-    public Address Address { get; }
+    public ImmutableList<Address> Addresses { get; }
     
     #if !GENERATE
     public Dto GetDto()

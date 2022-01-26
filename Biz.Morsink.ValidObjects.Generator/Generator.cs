@@ -25,20 +25,7 @@ public class Generator : IIncrementalGenerator
             {
                 foreach (var c in cls)
                 {
-                    var source = @$"
-namespace {c.Namespace};
-using Biz.Morsink.Results;
-using Biz.Morsink.Results.Errors;
-using Biz.Morsink.ValidObjects;
-using Biz.Morsink.ValidObjects.Constraints;
-
-partial class {c.ClassName} : IValidObject<{c.ClassName},{c.ClassName}.Dto>
-{{
-{c.GetConstructor()}
-{c.GetGetDto()}
-{c.GetDto()}
-}}
-";
+                    var source = c.GetSource();
                     spc.AddSource($"{c.ClassName}.g.cs", source);
                 }
             });

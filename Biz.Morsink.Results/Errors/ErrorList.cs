@@ -16,6 +16,7 @@ public readonly struct ErrorList : IReadOnlyList<Error>, IErrorAggregable<ErrorL
 
     public Error this[int index] => _errors[index];
     public int Count => _errors.Count;
+    public bool IsEmpty => Count == 0;
 
     public ErrorList Aggregate(ErrorList error)
         => new (_errors.AddRange(error._errors));
@@ -34,4 +35,5 @@ public readonly struct ErrorList : IReadOnlyList<Error>, IErrorAggregable<ErrorL
         => new (new[] { error });
     public static ErrorList Create(params Error[] errors)
         => new (errors);
+
 }
