@@ -127,4 +127,24 @@ public static class ObjectValidator
     public static IObjectValidator<ImmutableSortedSet<Vo>, ImmutableSortedSet<Dto>> ToSortedSetValidator<Vo, Dto>(this IObjectValidator<Vo, Dto> baseValidator)
         where Dto : class
         => baseValidator.ToSortedSetValidator(d => d);
+
+    private class NullableImpl<Vo, Dto> : IObjectValidator<Vo?, Dto?>
+        where Vo : notnull
+        where Dto : notnull
+    {
+        private readonly IObjectValidator<Vo, Dto> _inner;
+        public NullableImpl(IObjectValidator<Vo,Dto> inner)
+        {
+            _inner = inner;
+        }
+
+        public Result<Vo?, ErrorList> TryCreate(Dto? dto)
+            => dto.PropagateNull(_inner.TryCreate);
+        public Dto? GetDto(Vo? validObject)
+            => validObject == null ? default : _inner.GetDto(validObject);
+    }
+    public static IObjectValidator<Vo?, Dto?> ToNullableValidator<Vo, Dto>(this IObjectValidator<Vo, Dto> validator)
+        where Vo : notnull
+        where Dto : notnull
+        => new NullableImpl<Vo, Dto>(validator);
 }

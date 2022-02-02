@@ -18,6 +18,8 @@ using NonEmptyString = Biz.Morsink.ValidObjects.Valid<string, Biz.Morsink.ValidO
 using ZipCodeString = Biz.Morsink.ValidObjects.Valid<string, GenerationTest.DutchZipCode>;
 using NaturalNumber = Biz.Morsink.ValidObjects.Valid<int, Biz.Morsink.ValidObjects.Constraints.MinValue<Biz.Morsink.ValidObjects.Math.Zero>>;
 
+#nullable enable
+
 public class DutchZipCode : RegexConstraint
 {
     public static DutchZipCode Instance { get; } = new ();
@@ -36,7 +38,7 @@ public partial class Address
 [Generate]
 public partial class Person
 {
-    public NonEmptyString FirstName { get; }
+    public NonEmptyString? FirstName { get; }
     public NonEmptyString LastName { get; }
     public NaturalNumber Age { get; }
     public ImmutableList<Address> Addresses { get; }
@@ -64,7 +66,7 @@ public partial class Person {{
         Console.WriteLine($""Hoi"");
     }}
     public String Hello {{ get; }}
-    public Valid<String, NotEmpty> Name {{get; }}
+    public Valid<String, NotEmpty>? Name {{get; }}
     public string Test {{ get; set; }}
     public ImmutableList<Address> Addresses {{get;}} 
 }}

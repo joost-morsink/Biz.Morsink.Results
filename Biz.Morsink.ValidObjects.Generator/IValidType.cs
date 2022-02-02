@@ -1,4 +1,6 @@
 using System.Collections.Immutable;
+using Biz.Morsink.Results;
+using Biz.Morsink.Results.Errors;
 using Microsoft.CodeAnalysis;
 namespace Biz.Morsink.ValidObjects.Generator;
 
@@ -16,6 +18,8 @@ public interface IValidType
     {
         if (type is INamedTypeSymbol nts)
         {
+            if (nts.NullableAnnotation == NullableAnnotation.Annotated)
+                return new ValidNullableType(Create(nts.WithNullableAnnotation(NullableAnnotation.NotAnnotated)));
             if (nts.ContainingNamespace.ToString() == "System.Collections.Immutable"
                 && (nts.Name == nameof(ImmutableList<object>) 
                     || nts.Name == nameof(ImmutableHashSet<object>) 

@@ -58,5 +58,15 @@ class ValidType : IValidType
                     : "null";
     
     public bool IsValidType => GenerateAttribute != null || !SymbolEqualityComparer.Default.Equals(Type, RawType);
-    public string DefaultValueAssignment { get; } = "";
+    public string DefaultValueAssignment
+    {
+        get
+        {
+            if (GenerateAttribute != null)
+                return $" = new {RawTypeName}();";
+            if (RawTypeName == "string")
+                return " = \"\";";
+            return "";
+        }
+    }
 }

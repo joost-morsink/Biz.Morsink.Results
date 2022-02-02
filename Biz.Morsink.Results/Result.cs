@@ -222,6 +222,9 @@ public static class Result
                 onError(f.Error);
     }
 
+    public static Result<T?, E> SequenceNull<T, E>(this Result<T, E>? result)
+        where T : notnull
+        => result?.CastNullable() ?? default(T?);
     public static Result<ImmutableArray<T>, E> Sequence<T, E>(this IEnumerable<Result<T, E>> results, Func<E, E, E>? errorAggregator = null)
     {
         var (successes, failures) = results.Split();
@@ -486,6 +489,19 @@ public static class Result
             IFailure<E> fai => onFailure(fai.Error),
             _ => throw new InvalidOperationException()
         };
+
+    public static Result<T?, E> CastNullable<T, E>(this Result<T, E> res)
+        => res.Switch<Result<T?, E>>(s => s, f => f);
+    public static Result<U?, E> PropagateNull<T, U, E>(this T? item, Func<T, Result<U, E>> f)
+        where T : notnull
+        where U : notnull
+    {
+        if (item == null)
+            return default(U?);
+        else
+            return f(item).CastNullable();
+    }
+    
 }
 public abstract class Result<T, E> : IResult<T, E>
 {

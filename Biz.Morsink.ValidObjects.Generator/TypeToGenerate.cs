@@ -19,6 +19,7 @@ namespace {Namespace};
 using Biz.Morsink.Results;
 using Biz.Morsink.Results.Errors;
 using Biz.Morsink.ValidObjects;
+#nullable enable
 
 partial class {ClassName} : IValidObject<{ClassName},{ClassName}.Dto>, IHasStaticValidator<{ClassName}, {ClassName}.Dto>
 {{
