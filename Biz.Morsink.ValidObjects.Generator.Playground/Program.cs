@@ -27,6 +27,13 @@ public class DutchZipCode : RegexConstraint
     {
     }
 }
+public class Identifier : RegexConstraint
+{
+    public static Identifier Instance { get; } = new ();
+    public Identifier() : base(""^[A-Za-z_][A-Za-z_0-9]*"")
+    {
+    }
+}
 [Generate]
 public partial class Address
 {
@@ -42,6 +49,13 @@ public partial class Person
     public NonEmptyString LastName { get; }
     public NaturalNumber Age { get; }
     public ImmutableList<Address> Addresses { get; }
+}
+[Generate]
+public partial class DictContainer
+{
+    public ImmutableDictionary<string, string> Regular { get; }
+    public IImmutableDictionary<Valid<string,Identifier>, Valid<string,NotEmpty>> Both { get; }
+    public ImmutableSortedDictionary<string, Valid<string, NotEmpty>> Value { get; }
 }
 public class Program 
 {

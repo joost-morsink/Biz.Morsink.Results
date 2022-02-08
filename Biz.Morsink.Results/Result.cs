@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 public static class Result
 {
+    #region Builders
     public struct ForErrorType<E>
     {
         public Result<T, E> Success<T>(T value)
@@ -22,6 +23,9 @@ public static class Result
     }
     public static ForTypes<T, E> For<T, E>()
         => default;
+    #endregion
+    
+    #region Monad
     public static Result<U, E> Bind<T, U, E>(this Result<T, E> result, Func<T, Result<U, E>> f)
         => result.SelectMany(f);
     public static Result<T, E> BindIgnore<T, U, E>(this Result<T, E> result, Func<T, Result<U, E>> f)
@@ -40,23 +44,9 @@ public static class Result
         => result.Select(v => f(v.Item1, v.Item2, v.Item3, v.Item4, v.Item5, v.Item6));
     public static Result<R, E> Select<T, U, V, W, X, Y, Z, R, E>(this Result<(T, U, V, W, X, Y, Z), E> result, Func<T, U, V, W, X, Y, Z, R> f)
         => result.Select(v => f(v.Item1, v.Item2, v.Item3, v.Item4, v.Item5, v.Item6, v.Item7));
+    #endregion
 
-    private static T GetValue<T, E>(this Result<T, E> o)
-        => ((ISuccess<T>)o).Value;
-
-    public static (ImmutableList<ISuccess<T>>, ImmutableList<IFailure<E>>) Split<T, E>(this IEnumerable<Result<T, E>> results)
-    {
-        var successes =  ImmutableList<ISuccess<T>>.Empty.ToBuilder();
-        var failures = ImmutableList<IFailure<E>>.Empty.ToBuilder();
-        foreach (var r in results)
-        {
-            if(r is ISuccess<T> s)
-                successes.Add(s);
-            if(r is IFailure<E> f)
-                failures.Add(f);
-        }
-        return (successes.ToImmutable(), failures.ToImmutable());
-    }
+    #region Applicative
     public static Result<R, E> Apply<T, R, E>(this Result<T, E> result, Result<Func<T, R>, E> f, Func<E, E, E>? errorAggregator = null)
     {
         var failures = new object[] { result, f }.OfType<IFailure<E>>().ToList();
@@ -192,7 +182,10 @@ public static class Result
         else
             return failures.Select(fail => fail.Error).Aggregate(errorAggregator ?? ErrorAggregation.Get<E>());
     }
-
+    #endregion
+    
+    #region Enumerables
+    #region Filtering
     public static IEnumerable<T> DropFailures<T, E>(this IEnumerable<Result<T, E>> results, Action<E>? onError = null)
     {
         if (onError == null)
@@ -221,10 +214,33 @@ public static class Result
             else if (onError != null && x.Value is IFailure<E> f)
                 onError(f.Error);
     }
-
+    public static Result<T, string> FirstToResult<T>(this IEnumerable<T> src)
+    {
+        foreach (var x in src)
+            return x;
+        return "Sequence is empty, element not found.";
+    }
+    public static Result<T, E> FirstToResult<T,E>(this IEnumerable<T> src, Func<E> errorCreator)
+    {
+        foreach (var x in src)
+            return x;
+        return errorCreator();
+    }
+    public static Result<T, E> FirstToResult<T,E>(this IEnumerable<T> src, E error)
+    {
+        foreach (var x in src)
+            return x;
+        return error;
+    }
+    #endregion
+    
+    #region Null
     public static Result<T?, E> SequenceNull<T, E>(this Result<T, E>? result)
         where T : notnull
         => result?.CastNullable() ?? default(T?);
+    #endregion
+    
+    #region Simple collections
     public static Result<ImmutableArray<T>, E> Sequence<T, E>(this IEnumerable<Result<T, E>> results, Func<E, E, E>? errorAggregator = null)
     {
         var (successes, failures) = results.Split();
@@ -243,6 +259,10 @@ public static class Result
     }
     public static Result<IImmutableSet<T>, E> SequenceSet<T, E>(this IEnumerable<Result<T, E>> results, Func<E, E, E>? errorAggregator = null)
         => results.SequenceSet(ts => (IImmutableSet<T>)ts.ToImmutableHashSet(), errorAggregator);
+    public static Result<ImmutableHashSet<T>, E> SequenceHashSet<T, E>(this IEnumerable<Result<T, E>> results, Func<E, E, E>? errorAggregator = null)
+        => results.SequenceSet(ts => ts.ToImmutableHashSet(), errorAggregator);
+    public static Result<ImmutableSortedSet<T>, E> SequenceSortedSet<T, E>(this IEnumerable<Result<T, E>> results, Func<E, E, E>? errorAggregator = null)
+        => results.SequenceSet(ts => ts.ToImmutableSortedSet(), errorAggregator);
     public static Result<C, E> SequenceSet<T, E, C>(this IEnumerable<Result<T, E>> results, Func<IEnumerable<T>, C> collector, Func<E, E, E>? errorAggregator = null)
         where C: IImmutableSet<T>
     {
@@ -250,12 +270,34 @@ public static class Result
         if (failures.Count > 0)
             return failures.Select(f => f.Error).Aggregate(errorAggregator ?? ErrorAggregation.Get<E>());
         else
-            return collector(successes.Select(s => s.Value));
+            return collector(successes.Select(s => s.Value)); 
     }
-
-    public static Result<ImmutableDictionary<K, V>, E> SequenceDictionary<K, V, E>(this IEnumerable<KeyValuePair<K, Result<V, E>>> results,
-                                                                                Func<E, E, E>? errorAggregator = null)
+    #endregion
+    
+    #region Dictionaries
+    public static Result<IImmutableDictionary<K, V>, E> SequenceDictionary<K, V, E>(this IEnumerable<KeyValuePair<K, Result<V, E>>> results,
+                                                                                    Func<E, E, E>? errorAggregator = null)
         where K : notnull
+        => results.SequenceDictionary(kvps => (IImmutableDictionary<K, V>) 
+                kvps.ToImmutableDictionary(x => x.Item1, x => x.Item2), 
+            errorAggregator);
+    public static Result<ImmutableDictionary<K, V>, E> SequenceHashDictionary<K, V, E>(this IEnumerable<KeyValuePair<K, Result<V, E>>> results,
+                                                                                    Func<E, E, E>? errorAggregator = null)
+        where K : notnull
+        => results.SequenceDictionary(kvps => 
+                kvps.ToImmutableDictionary(x => x.Item1, x => x.Item2), 
+            errorAggregator);
+    public static Result<ImmutableSortedDictionary<K, V>, E> SequenceSortedDictionary<K, V, E>(this IEnumerable<KeyValuePair<K, Result<V, E>>> results,
+                                                                                    Func<E, E, E>? errorAggregator = null)
+        where K : notnull
+        => results.SequenceDictionary(kvps =>  
+                kvps.ToImmutableSortedDictionary(x => x.Item1, x => x.Item2), 
+            errorAggregator);
+    public static Result<D, E> SequenceDictionary<K, V, E, D>(this IEnumerable<KeyValuePair<K, Result<V, E>>> results,
+                                                              Func<IEnumerable<(K, V)>, D> collector,
+                                                              Func<E, E, E>? errorAggregator = null)
+        where K : notnull
+        where D : IImmutableDictionary<K, V>
     {
         var successes = new List<(K, V)>();
         var failures = new List<E>();
@@ -264,13 +306,34 @@ public static class Result
             x.Value.Act(s => successes.Add((x.Key, s)), f => failures.Add(f));
         }
         if (failures.Count == 0)
-            return successes.ToImmutableDictionary(x => x.Item1, x => x.Item2);
+            return collector(successes);
         else
             return failures.Aggregate(errorAggregator ?? ErrorAggregation.Get<E>());
     }
-    public static Result<ImmutableDictionary<K, V>, E> SequenceDictionary<K, V, E>(this IEnumerable<(K, Result<V, E>)> results,
-                                                                                   Func<E, E, E>? errorAggregator = null)
+    public static Result<IImmutableDictionary<K, V>, E> SequenceDictionary<K, V, E>(this IEnumerable<(K, Result<V, E>)> results,
+                                                                                    Func<E, E, E>? errorAggregator = null)
         where K : notnull
+        => results.SequenceDictionary(kvps => (IImmutableDictionary<K, V>) 
+                kvps.ToImmutableDictionary(x => x.Item1, x => x.Item2), 
+            errorAggregator);
+    public static Result<ImmutableDictionary<K, V>, E> SequenceHashDictionary<K, V, E>(this IEnumerable<(K, Result<V, E>)> results,
+                                                                                       Func<E, E, E>? errorAggregator = null)
+        where K : notnull
+        => results.SequenceDictionary(kvps => 
+                kvps.ToImmutableDictionary(x => x.Item1, x => x.Item2), 
+            errorAggregator);
+    public static Result<ImmutableSortedDictionary<K, V>, E> SequenceSortedDictionary<K, V, E>(this IEnumerable<(K, Result<V, E>)> results,
+                                                                                               Func<E, E, E>? errorAggregator = null)
+        where K : notnull
+        => results.SequenceDictionary(kvps =>  
+                kvps.ToImmutableSortedDictionary(x => x.Item1, x => x.Item2), 
+            errorAggregator);
+
+    public static Result<D, E> SequenceDictionary<K, V, E, D>(this IEnumerable<(K, Result<V, E>)> results,
+                                                              Func<IEnumerable<(K, V)>, D> collector, 
+                                                              Func<E, E, E>? errorAggregator = null)
+        where K : notnull
+        where D : IImmutableDictionary<K, V>
     {
         var successes = new List<(K, V)>();
         var failures = new List<E>();
@@ -279,11 +342,101 @@ public static class Result
             x.Item2.Act(s => successes.Add((x.Item1, s)), f => failures.Add(f));
         }
         if (failures.Count == 0)
-            return successes.ToImmutableDictionary(x => x.Item1, x => x.Item2);
+            return collector(successes);
         else
             return failures.Aggregate(errorAggregator ?? ErrorAggregation.Get<E>());
     }
+    public static Result<IImmutableDictionary<K, V>, E> SequenceDictionary<K, V, E>(this IEnumerable<KeyValuePair<Result<K, E>, Result<V, E>>> results,
+                                                                                    Func<E, E, E>? errorAggregator = null)
+        where K : notnull
+        => results.SequenceKeyDictionary(kvps => (IImmutableDictionary<K, V>) 
+                kvps.ToImmutableDictionary(x => x.Item1, x => x.Item2), 
+            errorAggregator);
+    public static Result<ImmutableDictionary<K, V>, E> SequenceHashDictionary<K, V, E>(this IEnumerable<KeyValuePair<Result<K, E>, Result<V, E>>> results,
+                                                                                       Func<E, E, E>? errorAggregator = null)
+        where K : notnull
+        => results.SequenceKeyDictionary(kvps => 
+                kvps.ToImmutableDictionary(x => x.Item1, x => x.Item2), 
+            errorAggregator);
+    public static Result<ImmutableSortedDictionary<K, V>, E> SequenceSortedDictionary<K, V, E>(this IEnumerable<KeyValuePair<Result<K, E>, Result<V, E>>> results,
+                                                                                               Func<E, E, E>? errorAggregator = null)
+        where K : notnull
+        => results.SequenceKeyDictionary(kvps =>  
+                kvps.ToImmutableSortedDictionary(x => x.Item1, x => x.Item2), 
+            errorAggregator);
 
+    public static Result<D, E> SequenceKeyDictionary<K, V, E, D>(this IEnumerable<KeyValuePair<Result<K,E>, Result<V, E>>> results,
+                                                              Func<IEnumerable<(K,V)>,D> collector,
+                                                              Func<E, E, E>? errorAggregator = null)
+        where K : notnull
+        where D : IImmutableDictionary<K, V>
+    {
+        var successes = new List<(K, V)>();
+        var failures = new List<E>();
+        foreach (var x in results)
+        {
+            if(x.Key is ISuccess<K> key && x.Value is ISuccess<V> value)
+                successes.Add((key.Value, value.Value));
+            else
+            {
+                if (x.Key is IFailure<E> error)
+                    failures.Add(error.Error);
+                if (x.Value is IFailure<E> error2)
+                    failures.Add(error2.Error);
+            }
+        }
+        if (failures.Count == 0)
+            return collector(successes);
+        else
+            return failures.Aggregate(errorAggregator ?? ErrorAggregation.Get<E>());
+    }
+    public static Result<IImmutableDictionary<K, V>, E> SequenceDictionary<K, V, E>(this IEnumerable<(Result<K, E>, Result<V, E>)> results,
+                                                                                    Func<E, E, E>? errorAggregator = null)
+        where K : notnull
+        => results.SequenceKeyDictionary(kvps => (IImmutableDictionary<K, V>) 
+                kvps.ToImmutableDictionary(x => x.Item1, x => x.Item2), 
+            errorAggregator);
+    public static Result<ImmutableDictionary<K, V>, E> SequenceHashDictionary<K, V, E>(this IEnumerable<(Result<K, E>, Result<V, E>)> results,
+                                                                                       Func<E, E, E>? errorAggregator = null)
+        where K : notnull
+        => results.SequenceKeyDictionary(kvps => 
+                kvps.ToImmutableDictionary(x => x.Item1, x => x.Item2), 
+            errorAggregator);
+    public static Result<ImmutableSortedDictionary<K, V>, E> SequenceSortedDictionary<K, V, E>(this IEnumerable<(Result<K, E>, Result<V, E>)> results,
+                                                                                               Func<E, E, E>? errorAggregator = null)
+        where K : notnull
+        => results.SequenceKeyDictionary(kvps =>  
+                kvps.ToImmutableSortedDictionary(x => x.Item1, x => x.Item2), 
+            errorAggregator);
+    public static Result<D, E> SequenceKeyDictionary<K, V, E,D>(this IEnumerable<(Result<K, E>, Result<V, E>)> results,
+                                                             Func<IEnumerable<(K, V)>, D> collector,
+                                                             Func<E, E, E>? errorAggregator = null)
+        where K : notnull
+        where D : IImmutableDictionary<K, V>
+    {
+        var successes = new List<(K, V)>();
+        var failures = new List<E>();
+        foreach (var x in results)
+        {
+            if(x.Item1 is ISuccess<K> key && x.Item2 is ISuccess<V> value)
+                successes.Add((key.Value, value.Value));
+            else
+            {
+                if (x.Item1 is IFailure<E> error)
+                    failures.Add(error.Error);
+                if (x.Item2 is IFailure<E> error2)
+                    failures.Add(error2.Error);
+            }
+        }
+        if (failures.Count == 0)
+            return collector(successes);
+        else
+            return failures.Aggregate(errorAggregator ?? ErrorAggregation.Get<E>());
+    }
+    #endregion
+    #endregion
+    
+    #region Tuples
     public static Result<(T, U), E> Sequence<T, U, E>(this (Result<T, E>, Result<U, E>) result, Func<E, E, E>? errorAggregator = null)
         => result.Apply((t, u) => (t, u), errorAggregator);
     public static Result<(T, U, V), E> Sequence<T, U, V, E>(this (Result<T, E>, Result<U, E>, Result<V, E>) result, Func<E, E, E>? errorAggregator = null)
@@ -302,7 +455,9 @@ public static class Result
         this (Result<T, E>, Result<U, E>, Result<V, E>, Result<W, E>, Result<X, E>, Result<Y, E>, Result<Z, E>) result,
         Func<E, E, E>? errorAggregator = null)
         => result.Apply((t, u, v, w, x, y, z) => (t, u, v, w, x, y, z), errorAggregator);
-
+    #endregion
+    
+    #region Async
     public static ValueTask<Result<U, E>> SelectAsync<T, U, E>(this Result<T, E> result, Func<T, Task<U>> f)
     {
         var res = ForError<E>();
@@ -383,6 +538,8 @@ public static class Result
     {
         return result.Switch<ValueTask<Result<U, E>>>(async t => await f(t), e => new ValueTask<Result<U, E>>(e));
     }
+    #endregion
+    
     public readonly struct Caster<T, E>
         where T : notnull
     {
@@ -438,24 +595,6 @@ public static class Result
     public static Result<T, F> SetError<T, E, F>(this Result<T, E> result, F error)
         => result.SelectError(_ => error);
 
-    public static Result<T, string> FirstToResult<T>(this IEnumerable<T> src)
-    {
-        foreach (var x in src)
-            return x;
-        return "Sequence is empty, element not found.";
-    }
-    public static Result<T, E> FirstToResult<T,E>(this IEnumerable<T> src, Func<E> errorCreator)
-    {
-        foreach (var x in src)
-            return x;
-        return errorCreator();
-    }
-    public static Result<T, E> FirstToResult<T,E>(this IEnumerable<T> src, E error)
-    {
-        foreach (var x in src)
-            return x;
-        return error;
-    }
     public static Result<T, string> ParseEnum<T>(this string str, bool caseSensitive = true)
         where T : struct, Enum
     {
@@ -501,7 +640,23 @@ public static class Result
         else
             return f(item).CastNullable();
     }
+    private static T GetValue<T, E>(this Result<T, E> o)
+        => ((ISuccess<T>)o).Value;
     
+
+    public static (ImmutableList<ISuccess<T>>, ImmutableList<IFailure<E>>) Split<T, E>(this IEnumerable<Result<T, E>> results)
+    {
+        var successes =  ImmutableList<ISuccess<T>>.Empty.ToBuilder();
+        var failures = ImmutableList<IFailure<E>>.Empty.ToBuilder();
+        foreach (var r in results)
+        {
+            if(r is ISuccess<T> s)
+                successes.Add(s);
+            if(r is IFailure<E> f)
+                failures.Add(f);
+        }
+        return (successes.ToImmutable(), failures.ToImmutable());
+    }
 }
 public abstract class Result<T, E> : IResult<T, E>
 {

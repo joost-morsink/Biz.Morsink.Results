@@ -20,12 +20,18 @@ public interface IValidType
         {
             if (nts.NullableAnnotation == NullableAnnotation.Annotated)
                 return new ValidNullableType(Create(nts.WithNullableAnnotation(NullableAnnotation.NotAnnotated)));
-            if (nts.ContainingNamespace.ToString() == "System.Collections.Immutable"
-                && (nts.Name == nameof(ImmutableList<object>) 
-                    || nts.Name == nameof(ImmutableHashSet<object>) 
+            if (nts.ContainingNamespace.ToString() == "System.Collections.Immutable")
+            {
+                if (nts.Name == nameof(ImmutableList<object>)
+                    || nts.Name == nameof(ImmutableHashSet<object>)
                     || nts.Name == nameof(IImmutableSet<object>)
-                    || nts.Name == nameof(ImmutableSortedSet<object>)))
-                return new ValidCollectionType(nts);
+                    || nts.Name == nameof(ImmutableSortedSet<object>))
+                    return new ValidCollectionType(nts);
+                if (nts.Name == nameof(IImmutableDictionary<object, object>)
+                    || nts.Name == nameof(ImmutableDictionary<object, object>)
+                    || nts.Name == nameof(ImmutableSortedDictionary<object, object>))
+                    return new ValidDictionaryType(nts);
+            }
         }
         return new ValidType(type);
     }

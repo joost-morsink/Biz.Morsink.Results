@@ -30,5 +30,5 @@ class ValidCollectionType : IValidType
     public string GetTryCreate(string name)
         => $"{ObjectValidator}.TryCreate({name}).Prefix(nameof({name}))";
     public string GetGetDto(string name)
-        => $"{ObjectValidator}.GetDto({name})";
+        => IsValidType ? $"{ObjectValidator}.GetDto({name})" : name;
 }

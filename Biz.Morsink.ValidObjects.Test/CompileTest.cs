@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using Biz.Morsink.Results;
+using Biz.Morsink.Results.Errors;
 namespace Biz.Morsink.ValidObjects.Test;
 
 using NonEmptyString = Valid<string, NotEmpty>;
@@ -38,7 +39,14 @@ public partial class Person
     public IImmutableSet<Valid<string, Identifier>> Tags { get; }
 }
 
-
+[Generate]
+public partial class DictContainer
+{
+    public ImmutableDictionary<string, string> Regular { get; }
+    public ImmutableSortedDictionary<Valid<string,Identifier>, Valid<string,NotEmpty>> Both { get; }
+    public IImmutableDictionary<string, Valid<string, NotEmpty>> Value { get; }
+    public ImmutableList<string> Strings { get; }
+}
 public struct Natural
 {
     private readonly Valid<int, MinValue<Zero>> _value;
@@ -59,12 +67,3 @@ public struct Natural
     public static Natural operator *(Natural x, Natural y)
         => new (Valid<int, MinValue<Zero>>.TryCreate(x.Value + y.Value).GetOrThrow());
 }
-
-// [Generate]
-// public partial class GenerationTest
-// {
-//     public void Test()
-//     {
-//         Console.WriteLine(Hallo);
-//     }
-// }
