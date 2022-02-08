@@ -21,7 +21,7 @@ public class Identifier : RegexConstraint
     {
     }
 }
-[Generate]
+[ValidObject]
 public partial class Address
 {
     public NonEmptyString Street { get; }
@@ -29,7 +29,7 @@ public partial class Address
     public ZipCodeString ZipCode { get; }
     public NonEmptyString City { get; }
 }
-[Generate]
+[ValidObject]
 public partial class Person
 {
     public NonEmptyString FirstName { get; }
@@ -39,7 +39,7 @@ public partial class Person
     public IImmutableSet<Valid<string, Identifier>> Tags { get; }
 }
 
-[Generate]
+[ValidObject]
 public partial class DictContainer
 {
     public ImmutableDictionary<string, string> Regular { get; }

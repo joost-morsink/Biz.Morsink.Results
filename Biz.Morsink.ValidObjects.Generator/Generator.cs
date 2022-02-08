@@ -65,7 +65,7 @@ public class Generator : IIncrementalGenerator
                 var attributeContainingTypeSymbol = attributeSymbol.ContainingType;
                 var fullName = attributeContainingTypeSymbol.ToDisplayString();
 
-                if (fullName == "Biz.Morsink.ValidObjects.GenerateAttribute")
+                if (fullName == "Biz.Morsink.ValidObjects.ValidObjectAttribute")
                     return generatorContextNode;
             }
         }

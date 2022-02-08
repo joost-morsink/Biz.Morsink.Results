@@ -34,7 +34,7 @@ public class Identifier : RegexConstraint
     {
     }
 }
-[Generate]
+[ValidObject]
 public partial class Address
 {
     public NonEmptyString Street { get; }
@@ -42,7 +42,7 @@ public partial class Address
     public ZipCodeString ZipCode { get; }
     public NonEmptyString City { get; }
 }
-[Generate]
+[ValidObject]
 public partial class Person
 {
     public NonEmptyString? FirstName { get; }
@@ -50,7 +50,7 @@ public partial class Person
     public NaturalNumber Age { get; }
     public ImmutableList<Address> Addresses { get; }
 }
-[Generate]
+[ValidObject]
 public partial class DictContainer
 {
     public ImmutableDictionary<string, string> Regular { get; }
@@ -65,34 +65,7 @@ public class Program
     }
 }
 ";
-var oldcode = @"
-namespace GenerationTest;
 
-using System;
-using Biz.Morsink.ValidObjects;
-using Biz.Morsink.ValidObjects.Constraints;
-using System.Collections.Immutable;
-
-[Generate] 
-public partial class Person {{
-    public static void Main() 
-    {{
-        Console.WriteLine($""Hoi"");
-    }}
-    public String Hello {{ get; }}
-    public Valid<String, NotEmpty>? Name {{get; }}
-    public string Test {{ get; set; }}
-    public ImmutableList<Address> Addresses {{get;}} 
-}}
-[Generate]
-public partial class Address {{
-    public Valid<string, NotEmpty> Street {{get;}}
-    public Valid<string, NotEmpty> Number {{get;}}
-    public Valid<string, NotEmpty> Zipcode {{get;}}
-    public Valid<string, NotEmpty> City {{get;}}
-    public string Country {{get;}}
-}}
-";
 
 Compilation inputCompilation = CreateCompilation(code);
 
@@ -112,7 +85,7 @@ Console.WriteLine(result);
 static Compilation CreateCompilation(string source)
 {
     var refs = AppDomain.CurrentDomain.GetAssemblies().Where(a => a.GetName().Name == "System.Runtime")
-        .Concat(new [] { typeof(object), typeof(Console), typeof(GenerateAttribute), typeof(Result), typeof(ImmutableList)}.Select(x => x.Assembly))
+        .Concat(new [] { typeof(object), typeof(Console), typeof(ValidObjectAttribute), typeof(Result), typeof(ImmutableList)}.Select(x => x.Assembly))
         .Select(a => a.Location)
         .Distinct()
         .Select(x => MetadataReference.CreateFromFile(x))

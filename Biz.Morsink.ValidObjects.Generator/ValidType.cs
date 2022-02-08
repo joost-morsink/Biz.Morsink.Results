@@ -20,7 +20,7 @@ class ValidType : IValidType
             .FirstOrDefault(itf => itf.ContainingNamespace.ToString() == "Biz.Morsink.ValidObjects"
                 && itf.Name == "IValidObject"
                 && itf.Arity == 1);
-        GenerateAttribute = Type.GetAttributes().FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == "Biz.Morsink.ValidObjects.GenerateAttribute");
+        GenerateAttribute = Type.GetAttributes().FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == "Biz.Morsink.ValidObjects.ValidObjectAttribute");
         RawType = StaticValidator?.TypeArguments[1]
             ?? FullInterface?.TypeArguments[1]
             ?? VoInterface?.TypeArguments[0]
