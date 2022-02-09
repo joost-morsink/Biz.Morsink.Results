@@ -43,4 +43,14 @@ public static class ErrorExt
         => @for.Failure(new Error(key, code, message));
     public static ErrorList ToList(this Error singleError)
         => new (new[] { singleError });
+    public static ErrorList Concat(this ErrorList left, IEnumerable<Error> right)
+        => left.Aggregate(new (right));
+    public static ErrorList Concat(this ErrorList left, ErrorList right)
+        => left.Aggregate(right);
+    public static ErrorList ToErrorList(this IEnumerable<Error> errors) 
+        => new (errors);
+    public static ErrorList ToErrorList(this IEnumerable<string> messages)
+        => messages.Select(m => new Error(default, default, m)).ToErrorList();
+    public static ErrorList ToErrorList(this bool valid, string message)
+        => valid ? ErrorList.Create() : ErrorList.Create(new Error(default,default,message));
 }

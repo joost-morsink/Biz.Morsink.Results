@@ -15,6 +15,7 @@ class ValidCollectionType : IValidType
     public string RawTypeName => $"{DecoratorType.ContainingNamespace}.{DecoratorType.Name}<{ElementType.RawTypeName}>";
     public string TypeName => Type.ToDisplayString();
     public bool IsValidType => ElementType.IsValidType;
+    public bool IsComplexValidType => false;
     public string DefaultValueAssignment => DecoratorType.Name == nameof(IImmutableSet<object>)
         ? $" = System.Collections.Immutable.ImmutableHashSet<{ElementType.RawTypeName}>.Empty;"
         : $" = {DecoratorType.ContainingNamespace}.{DecoratorType.Name}<{ElementType.RawTypeName}>.Empty;";

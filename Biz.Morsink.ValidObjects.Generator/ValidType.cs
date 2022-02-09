@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 namespace Biz.Morsink.ValidObjects.Generator;
 
@@ -21,11 +22,16 @@ class ValidType : IValidType
                 && itf.Name == "IValidObject"
                 && itf.Arity == 1);
         GenerateAttribute = Type.GetAttributes().FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == "Biz.Morsink.ValidObjects.ValidObjectAttribute");
+        ValidationMethods = Type.GetMembers().Where(m
+                => m.Kind == SymbolKind.Method
+                && m.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == "Biz.Morsink.ValidObjects.ValidationMethodAttribute"))
+            .ToImmutableArray();
         RawType = StaticValidator?.TypeArguments[1]
             ?? FullInterface?.TypeArguments[1]
             ?? VoInterface?.TypeArguments[0]
             ?? Type;
     }
+    public ImmutableArray<ISymbol> ValidationMethods { get; }
     public ITypeSymbol Type { get; }
     public string TypeName => Type.ToDisplayString();
     public ITypeSymbol RawType { get; }
@@ -58,6 +64,8 @@ class ValidType : IValidType
                     : "null";
     
     public bool IsValidType => GenerateAttribute != null || !SymbolEqualityComparer.Default.Equals(Type, RawType);
+    public bool IsComplexValidType => GenerateAttribute != null && ValidationMethods.Length > 0;
+
     public string DefaultValueAssignment
     {
         get

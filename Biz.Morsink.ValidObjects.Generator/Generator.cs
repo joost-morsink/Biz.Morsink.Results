@@ -46,7 +46,7 @@ public class Generator : IIncrementalGenerator
                         .Select(ps => ps!)
                         .ToImmutableArray();
 
-                builder.Add(new (symbol.ContainingNamespace.ToDisplayString(), symbol.Name, propsymbols));
+                builder.Add(new (symbol, propsymbols));
             }
         }
         return builder.ToImmutable();

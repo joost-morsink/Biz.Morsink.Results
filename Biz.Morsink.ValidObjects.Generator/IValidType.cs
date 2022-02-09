@@ -9,11 +9,14 @@ public interface IValidType
     string RawTypeName { get; }
     string TypeName { get; }
     bool IsValidType { get; }
+    bool IsComplexValidType { get; }
     string DefaultValueAssignment { get; }
 
     string ObjectValidator { get; }
     string GetTryCreate(string name);
     string GetGetDto(string name);
+    
+    
     public static IValidType Create(ITypeSymbol type)
     {
         if (type is INamedTypeSymbol nts)

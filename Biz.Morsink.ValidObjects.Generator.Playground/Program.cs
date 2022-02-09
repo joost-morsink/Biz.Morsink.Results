@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using Biz.Morsink.Results;
+using Biz.Morsink.Results.Errors;
 using Biz.Morsink.ValidObjects;
 using Biz.Morsink.ValidObjects.Generator;
 using Microsoft.CodeAnalysis;
@@ -13,6 +14,7 @@ namespace GenerationTest;
 using System;
 using Biz.Morsink.ValidObjects;
 using Biz.Morsink.ValidObjects.Constraints;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using NonEmptyString = Biz.Morsink.ValidObjects.Valid<string, Biz.Morsink.ValidObjects.Constraints.NotEmpty>;
 using ZipCodeString = Biz.Morsink.ValidObjects.Valid<string, GenerationTest.DutchZipCode>;
@@ -49,6 +51,15 @@ public partial class Person
     public NonEmptyString LastName { get; }
     public NaturalNumber Age { get; }
     public ImmutableList<Address> Addresses { get; }
+    [ValidationMethod]
+    private IEnumerable<string> Check()
+    {
+        if (!Equals(FirstName, LastName))
+            yield return ""First and lastnames should be different."";
+    }
+    [ValidationMethod(""Age should be less than 100"")]
+    private bool CheckAge()
+        => Age.Value < 100;
 }
 [ValidObject]
 public partial class DictContainer

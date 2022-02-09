@@ -15,6 +15,7 @@ class ValidDictionaryType : IValidType
     public string RawTypeName => $"{DecoratorType.ContainingNamespace}.{DecoratorType.Name}<{KeyType.RawTypeName}, {ValueType.RawTypeName}>";
     public string TypeName => Type.ToDisplayString();
     public bool IsValidType => ValueType.IsValidType;
+    public bool IsComplexValidType => false;
     public string DefaultValueAssignment => DecoratorType.Name == nameof(IImmutableDictionary<object,object>)
         ? $" = System.Collections.Immutable.ImmutableDictionary<{KeyType.RawTypeName}, {ValueType.RawTypeName}>.Empty;"
         : $" = {DecoratorType.ContainingNamespace}.{DecoratorType.Name}<{KeyType.RawTypeName}, {ValueType.RawTypeName}>.Empty;";

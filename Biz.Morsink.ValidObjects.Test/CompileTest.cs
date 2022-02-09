@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using Biz.Morsink.Results;
 using Biz.Morsink.Results.Errors;
@@ -37,6 +38,13 @@ public partial class Person
     public NaturalNumber Age { get; }
     public ImmutableList<Address> Addresses { get; }
     public IImmutableSet<Valid<string, Identifier>> Tags { get; }
+    [ValidationMethod]
+    private IEnumerable<string> Check()
+    {
+        if (!Equals(FirstName, LastName))
+            yield return "First and lastnames should be different.";
+    }
+    
 }
 
 [ValidObject]
