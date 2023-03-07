@@ -36,6 +36,28 @@ public static class ObjectValidator
         where Vo : class, IValidObject<Dto>
         where Dto : notnull
         => new ImplHalf<Vo, Dto>(tryCreate);
+
+    private class ImplOtherHalf<Vo, Dto> : IObjectValidator<Vo, Dto>
+        where Vo : class, IValidObject
+        where Dto : IDto<Vo>
+    {
+        private readonly Func<Vo, Dto> _getDto;
+
+        public ImplOtherHalf(Func<Vo, Dto> getDto)
+        {
+            _getDto = getDto;
+        }
+
+        public Result<Vo, ErrorList> TryCreate(Dto dto)
+            => dto.TryCreate();
+
+        public Dto GetDto(Vo validObject)
+            => _getDto(validObject);
+    }
+    public static IObjectValidator<Vo, Dto> For<Vo, Dto>(Func<Vo, Dto> getDto)
+        where Vo : class, IValidObject
+        where Dto : IDto<Vo>
+        => new ImplOtherHalf<Vo, Dto>(getDto);
     
     private class ComplexImpl<Vo, Int, Dto> : IComplexObjectValidator<Vo, Int, Dto>
         where Vo : class, IComplexValidObject<Vo, Int, Dto>
@@ -82,7 +104,7 @@ public static class ObjectValidator
         => new ListImpl<Vo, Dto>(baseValidator, indexer);
     public static IObjectValidator<ImmutableList<Vo>, ImmutableList<Dto>> ToListValidator<Vo, Dto>(this IObjectValidator<Vo, Dto> baseValidator)
         where Dto : class
-        => baseValidator.ToListValidator((d, _) => d);
+        => baseValidator.ToListValidator((_, idx) => idx);
     #endregion
     #region Set
     private class SetImpl<Vo, Dto, Svo, Sdto> : IObjectValidator<Svo, Sdto>

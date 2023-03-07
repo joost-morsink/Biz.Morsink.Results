@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 using Microsoft.CodeAnalysis;
 namespace Biz.Morsink.ValidObjects.Generator;
 
-public struct ValidTypes
+public class ValidTypes
 {
     #pragma warning disable RS1024
     private readonly ConcurrentDictionary<ITypeSymbol, IValidType> _entries = new (SymbolEqualityComparer.Default);

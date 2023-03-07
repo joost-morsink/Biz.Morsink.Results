@@ -36,7 +36,7 @@ public class Identifier : RegexConstraint
     {
     }
 }
-[ValidObject]
+[ValidObject(CellDtos=true)]
 public partial class Address
 {
     public NonEmptyString Street { get; }
@@ -47,10 +47,14 @@ public partial class Address
 [ValidObject]
 public partial class Person
 {
-    public NonEmptyString? FirstName { get; }
+    public NonEmptyString FirstName { get; }
     public NonEmptyString LastName { get; }
     public NaturalNumber Age { get; }
     public ImmutableList<Address> Addresses { get; }
+    public NaturalNumber LuckyNumber { get; }
+    public NaturalNumber TestNumber { get; }
+    public IImmutableSet<Valid<string, Identifier>> Tags { get; }
+
     [ValidationMethod]
     private IEnumerable<string> Check()
     {

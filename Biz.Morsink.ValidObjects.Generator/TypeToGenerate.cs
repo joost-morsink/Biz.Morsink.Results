@@ -6,7 +6,7 @@ using Microsoft.CodeAnalysis.Operations;
 namespace Biz.Morsink.ValidObjects.Generator;
 
 [SuppressMessage("ReSharper", "RedundantDefaultMemberInitializer")]
-public record TypeToGenerate(INamedTypeSymbol Symbol, ImmutableArray<IPropertySymbol> PropertySymbols)
+public record TypeToGenerate(INamedTypeSymbol Symbol, ImmutableArray<IPropertySymbol> PropertySymbols, GenerationOptions Options)
 {
     public string Namespace => Symbol.ContainingNamespace.ToDisplayString();
     public string ClassName => Symbol.Name;
