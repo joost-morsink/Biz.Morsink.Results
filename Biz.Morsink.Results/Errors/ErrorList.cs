@@ -1,6 +1,7 @@
 ﻿namespace Biz.Morsink.Results.Errors;
 
 using System.Collections;
+
 public readonly struct ErrorList : IReadOnlyList<Error>, IErrorAggregable<ErrorList>
 {
     private readonly ImmutableList<Error> _errors;
@@ -9,31 +10,38 @@ public readonly struct ErrorList : IReadOnlyList<Error>, IErrorAggregable<ErrorL
     {
         _errors = errors;
     }
+
     public ErrorList(IEnumerable<Error> errors)
     {
         _errors = errors.ToImmutableList();
     }
 
-    public Error this[int index] => _errors[index];
-    public int Count => _errors.Count;
+    public Error this[int index] 
+        => _errors?[index] ?? throw new ArgumentOutOfRangeException(nameof(index));
+
+    public int Count => _errors?.Count ?? 0;
     public bool IsEmpty => Count == 0;
 
     public ErrorList Aggregate(ErrorList error)
-        => new (_errors.AddRange(error._errors));
+        => new((_errors ?? ImmutableList<Error>.Empty).AddRange(error._errors));
 
     public IEnumerator<Error> GetEnumerator()
-        => _errors.GetEnumerator();
+        => (_errors ?? Enumerable.Empty<Error>()).GetEnumerator();
+
     IEnumerator IEnumerable.GetEnumerator()
         => GetEnumerator();
 
     public ErrorList Select(Func<Error, Error> manipulate)
-        => new (_errors.Select(manipulate));
+        => _errors is null
+            ? new(ImmutableList<Error>.Empty)
+            : new(_errors.Select(manipulate));
+
     public override string ToString()
         => string.Join(Environment.NewLine, _errors);
 
     public static implicit operator ErrorList(Error error)
-        => new (new[] { error });
-    public static ErrorList Create(params Error[] errors)
-        => new (errors);
+        => new(new[] {error});
 
+    public static ErrorList Create(params Error[] errors)
+        => new(errors);
 }

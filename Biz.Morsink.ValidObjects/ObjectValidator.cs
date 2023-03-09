@@ -17,6 +17,38 @@ public static class ObjectValidator
         where Vo : class, IValidObject<Vo, Dto>
         where Dto : IDto<Vo, Dto>
         => new Impl<Vo, Dto>();
+
+    private class MutableImpl<Vo, Mut> : IObjectValidator<Vo, Mut>
+        where Vo : class, IValidObjectWithToMutable<Vo, Mut>
+        where Mut : IValidationCell<Vo, Mut>, IDto<Vo>
+    {
+        public Result<Vo, ErrorList> TryCreate(Mut dto)
+            => dto.AsResult();
+
+        public Mut GetDto(Vo validObject)
+            => validObject.GetMutable();
+    }
+    public static IObjectValidator<Vo,Mut> ForMutable<Vo,Mut>()
+        where Vo : class, IValidObjectWithToMutable<Vo, Mut>
+        where Mut : IValidationCell<Vo, Mut>, IDto<Vo>
+        => new MutableImpl<Vo, Mut>();
+
+    private class MutableDtoImpl<Vo, Mut, MutDto> : IObjectValidator<Vo, MutDto>
+        where Vo : class, IValidObjectWithToMutable<Vo, Mut, MutDto>
+        where Mut : IValidationCell<Vo, MutDto>, IDto<Vo>
+        where MutDto : IToMutable<Mut>, IDto<Vo>
+    {
+        public Result<Vo, ErrorList> TryCreate(MutDto dto)
+            => dto.TryCreate();
+
+        public MutDto GetDto(Vo validObject)
+            => validObject.GetMutableDto();
+    }
+    public static IObjectValidator<Vo,MutDto> ForMutableDto<Vo,Mut,MutDto>()
+        where Vo : class, IValidObjectWithToMutable<Vo, Mut, MutDto>
+        where Mut : IValidationCell<Vo, MutDto>, IDto<Vo>
+        where MutDto : IToMutable<Mut>, IDto<Vo>
+        => new MutableDtoImpl<Vo, Mut, MutDto>();
     private class ImplHalf<Vo, Dto> : IObjectValidator<Vo, Dto>
         where Vo : class, IValidObject<Dto>
         where Dto : notnull
@@ -89,7 +121,7 @@ public static class ObjectValidator
     {
         private readonly IObjectValidator<Vo, Dto> _baseValidator;
         private readonly Func<Dto, int, object> _indexer;
-        public ListImpl(IObjectValidator<Vo, Dto> baseValidator, Func<Dto,int, object> indexer)
+        public ListImpl(IObjectValidator<Vo, Dto> baseValidator, Func<Dto, int, object> indexer)
         {
             _baseValidator = baseValidator;
             _indexer = indexer;
@@ -105,6 +137,37 @@ public static class ObjectValidator
     public static IObjectValidator<ImmutableList<Vo>, ImmutableList<Dto>> ToListValidator<Vo, Dto>(this IObjectValidator<Vo, Dto> baseValidator)
         where Dto : class
         => baseValidator.ToListValidator((_, idx) => idx);
+    
+    private class MutableListImpl<Vo, Dto, Mut, MutDto> : IObjectValidator<ImmutableList<Vo>, ImmutableList<Mut>>
+        where Vo : class, IValidObjectWithToMutable<Vo, Dto, Mut, MutDto>
+        where Dto : IDto<Vo, Dto>, IToMutable<Mut>
+        where Mut : ValidationCell<Vo, MutDto>, IDto<Vo>
+        where MutDto : IDto<Vo>, IToMutable<Mut>
+    {
+        private readonly Func<Mut, int, object> _indexer;
+        public MutableListImpl(Func<Mut, int, object> indexer)
+        {
+            _indexer = indexer;
+        }
+
+        public Result<ImmutableList<Vo>, ErrorList> TryCreate(ImmutableList<Mut> dto)
+            => dto.Select((d, index) => d.AsResult().Prefix(_indexer(d, index))).SequenceList();
+
+        public ImmutableList<Mut> GetDto(ImmutableList<Vo> validObject)
+            => validObject.Select(vo => vo.GetMutable()).ToImmutableList();
+    }
+    public static IObjectValidator<ImmutableList<Vo>, ImmutableList<Mut>> MakeMutableListValidator<Vo, Dto,Mut, MutDto>(Func<Mut, int, object> indexer)
+        where Vo : class, IValidObjectWithToMutable<Vo, Dto, Mut, MutDto>
+        where Dto : IDto<Vo, Dto>, IToMutable<Mut>
+        where Mut : ValidationCell<Vo, MutDto>, IDto<Vo>
+        where MutDto : IDto<Vo>, IToMutable<Mut>
+        => new MutableListImpl<Vo, Dto, Mut, MutDto>(indexer);
+    public static IObjectValidator<ImmutableList<Vo>, ImmutableList<Mut>> MakeMutableListValidator<Vo, Dto, Mut, MutDto>()
+        where Vo : class, IValidObjectWithToMutable<Vo, Dto, Mut, MutDto>
+        where Dto : IDto<Vo, Dto>, IToMutable<Mut>
+        where Mut : ValidationCell<Vo, MutDto>, IDto<Vo>
+        where MutDto : IDto<Vo>, IToMutable<Mut>
+        => MakeMutableListValidator<Vo, Dto, Mut, MutDto>((_, idx) => idx);
     #endregion
     #region Set
     private class SetImpl<Vo, Dto, Svo, Sdto> : IObjectValidator<Svo, Sdto>

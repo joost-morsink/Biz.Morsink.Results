@@ -13,9 +13,12 @@ public static class MutableCollectionsExt
     public static MutableSet<T> ToMutableSet<T>(this IEnumerable<T> coll)
         => coll is IImmutableSet<T> imSet ? imSet.ToMutableSet() : new (coll.ToImmutableHashSet());
 }
-public class MutableList<T> : INotifyCollectionChanged, IReadOnlyList<T>
+
+public class MutableList<T> : INotifyCollectionChanged, IReadOnlyList<T>, IHasStateVersion
 {
     private ImmutableList<T> _inner;
+    private readonly StateVersion _stateVersion = new();
+    public MutableList() : this(ImmutableList<T>.Empty) { }
     public MutableList(ImmutableList<T> inner)
     {
         _inner = inner;
@@ -27,6 +30,7 @@ public class MutableList<T> : INotifyCollectionChanged, IReadOnlyList<T>
         _inner = _inner.Add(item);
         OnNotifyCollectionChanged(new (NotifyCollectionChangedAction.Add, item));
     }
+
     public void SetItem(int index, T item)
     {
         var old = _inner[index];
@@ -47,6 +51,7 @@ public class MutableList<T> : INotifyCollectionChanged, IReadOnlyList<T>
     public event NotifyCollectionChangedEventHandler? CollectionChanged;
     protected void OnNotifyCollectionChanged(NotifyCollectionChangedEventArgs args)
     {
+        _stateVersion.Next();
         CollectionChanged?.Invoke(this, args);
     }
     public IEnumerator<T> GetEnumerator()
@@ -65,46 +70,60 @@ public class MutableList<T> : INotifyCollectionChanged, IReadOnlyList<T>
         foreach(var item in select)
             Add(item);
     }
+    public StateValue GetStateVersion()
+        => _stateVersion.Value
+            ^ _inner.Aggregate(StateValue.Zero, (acc,x) => acc ^ (x as IHasStateVersion)?.GetStateVersion() ?? StateValue.Zero);
 }
 
-public class MutableSet<T> : INotifyCollectionChanged, IReadOnlyCollection<T>
+public class MutableSet<T> : INotifyCollectionChanged, IReadOnlyCollection<T>, IHasStateVersion
 {
     private IImmutableSet<T> _inner;
+    private readonly StateVersion _stateVersion = new();
     public MutableSet(IImmutableSet<T> inner)
     {
         _inner = inner;
     }
+
     public IImmutableSet<T> ToImmutable()
         => _inner;
 
     public void Add(T item)
     {
         _inner = _inner.Add(item);
-        OnNotifyCollectionChanged(new (NotifyCollectionChangedAction.Add, item));
+        OnNotifyCollectionChanged(new(NotifyCollectionChangedAction.Add, item));
     }
+
     public void Remove(T item)
     {
         _inner = _inner.Remove(item);
-        OnNotifyCollectionChanged(new (NotifyCollectionChangedAction.Remove));
+        OnNotifyCollectionChanged(new(NotifyCollectionChangedAction.Remove));
     }
+
     public void Clear()
     {
         _inner = _inner.Clear();
-        OnNotifyCollectionChanged(new (NotifyCollectionChangedAction.Reset));
+        OnNotifyCollectionChanged(new(NotifyCollectionChangedAction.Reset));
     }
-    
+
     public IEnumerator<T> GetEnumerator()
     {
         return _inner.GetEnumerator();
     }
+
     IEnumerator IEnumerable.GetEnumerator()
     {
-        return ((IEnumerable)_inner).GetEnumerator();
+        return ((IEnumerable) _inner).GetEnumerator();
     }
+
     public int Count => _inner.Count;
     public event NotifyCollectionChangedEventHandler? CollectionChanged;
+
     protected virtual void OnNotifyCollectionChanged(NotifyCollectionChangedEventArgs eventArgs)
     {
+        _stateVersion.Next();
         CollectionChanged?.Invoke(this, eventArgs);
     }
+
+    public StateValue GetStateVersion()
+        => _stateVersion.Value;
 }
