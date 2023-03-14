@@ -20,6 +20,14 @@ public record TypeToGenerate(INamedTypeSymbol Symbol, ImmutableArray<IPropertySy
                 .FirstOrDefault())))
         .ToImmutableArray();
 
+    private string If(bool condition, string str)
+        => condition ? str : "";
+    private string If(bool condition, Func<string> str)
+        => condition ? str() : "";
+    private string IfMutable(string str)
+        => Options.Mutable ? str : "";
+    private string IfMutable(Func<string> str)
+        => Options.Mutable ? str() : "";
     public IValidType GetValidType(int index)
         => GetValidType(PropertySymbols[index].Type);
     public IValidType GetValidType(ITypeSymbol type)
@@ -36,26 +44,33 @@ namespace {Namespace};
 using Biz.Morsink.Results;
 using Biz.Morsink.Results.Errors;
 using Biz.Morsink.ValidObjects;
+using System.Collections.Immutable;
 #nullable enable
 
-partial class {ClassName} : IValidObject<{ClassName}, {ClassName}.Dto>, IHasStaticValidator<{ClassName}, {ClassName}.Dto>
+partial class {ClassName} : {GetValidObjectInterface()}, IHasStaticValidator<{ClassName}, {ClassName}.Dto>
 {{
 {GetValidator()}
 {GetConstructor()}
 {GetGetDto()}
 {GetDto()}
+{IfMutable(GetSimpleMutableImplementation)}
 }}
 ";
+    public string GetValidObjectInterface()
+        => Options.Mutable
+            ? $"IValidObjectWithToMutable<{ClassName}, {ClassName}.Dto, {ClassName}.Mutable, {ClassName}.Mutable.Dto>"
+            : $"IValidObject<{ClassName}, {ClassName}.Dto>";
+    
     public string GetComplexSource()
         => @$"
 namespace {Namespace};
 using Biz.Morsink.Results;
 using Biz.Morsink.Results.Errors;
 using Biz.Morsink.ValidObjects;
-
+using System.Collections.Immutable;
 #nullable enable
 
-partial class {ClassName} : IComplexValidObject<{ClassName}, {ClassName}.Intermediate, {ClassName}.Dto>, IHasStaticValidator<{ClassName}, {ClassName}.Dto>
+partial class {ClassName} : {GetComplexValidObjectInterface()}, IHasStaticValidator<{ClassName}, {ClassName}.Dto>
 {{
 {GetValidator()}
 {GetConstructor()}
@@ -63,8 +78,14 @@ partial class {ClassName} : IComplexValidObject<{ClassName}, {ClassName}.Interme
 {GetGetIntermediate()}
 {GetComplexDto()}
 {GetIntermediateDto()}
+{IfMutable(GetComplexMutableImplementation)}
 }}
 ";
+    public string GetComplexValidObjectInterface()
+        => Options.Mutable
+            ? $"IComplexValidObjectWithToMutable<{ClassName}, {ClassName}.Intermediate, {ClassName}.Dto, {ClassName}.Mutable, {ClassName}.Mutable.Dto>"
+            : $"IComplexValidObject<{ClassName}, {ClassName}.Intermediate, {ClassName}.Dto>";
+
     public string GetConstructor()
         => @$"
     private {ClassName}({string.Join(", ", PropertySymbols.Select(ps => $"{ps.Type.ToDisplayString()} {ps.Name}"))})
@@ -86,19 +107,41 @@ partial class {ClassName} : IComplexValidObject<{ClassName}, {ClassName}.Interme
         => new Intermediate({string.Join(", ", GetProperties().Select(ps => ps.property.Name))});";
     public string GetDto()
         => $@"
-    public partial record Dto : IDto<{ClassName}, Dto>
+    public partial record Dto : IDto<{ClassName}, Dto> {IfMutable(", IToMutable<Mutable>")}
     {{
-{string.Join(Environment.NewLine, GetProperties().Select(ps => $"        public {ps.validType.RawTypeName} {ps.property.Name} {{get; init;}}{ps.validType.DefaultValueAssignment}"))}
+{string.Join(Environment.NewLine, GetProperties().Select(ps => $"        public {ps.validType.RawTypeName} {ps.property.Name} {{get; init;}} = {ps.validType.DefaultValueAssignment};"))}
 {GetTryCreate()}
+{IfMutable(GetDtoToMutable)}
     }}";
+
+    public string GetDtoToMutable()
+        => $@"
+        public Mutable GetMutable() = new ()
+        {{
+            {string.Join("," + Environment.NewLine + "            ",
+                GetProperties().Select(ps => GetToMutablePropertyAssignment(ps.property,ps.validType)))}
+        }}";
+
+    public string GetToMutablePropertyAssignment(IPropertySymbol property, IValidType validType)
+        => validType.IsUnderlyingTypePrimitive
+            ? $"{property.Name} = {property.Name}"
+            : validType.IsCollection
+                ? validType.CollectionType!.Name switch
+                {
+                    nameof(ImmutableList<object>) => $"{property.Name} = new ({property.Name}.Select(x => x.GetMutable()).ToImmutableList())",
+                    nameof(IImmutableSet<object>) => $"{property.Name} = new ({property.Name}.Select(x => x.GetMutable()).ToImmutableHashSet())",
+                    _ => $"{property.Name} = default"
+                }
+                : $"{property.Name} = {property.Name}.GetMutable()";
     public string GetComplexDto()
         => $@"
-    public partial record Dto : IComplexDto<{ClassName}, Intermediate, Dto>
+    public partial record Dto : IComplexDto<{ClassName}, Intermediate, Dto> {IfMutable(", IToMutable<Mutable>")}
     {{
-{string.Join(Environment.NewLine, GetProperties().Select(ps => $"        public {ps.validType.RawTypeName} {ps.property.Name} {{get; init;}}{ps.validType.DefaultValueAssignment}"))}
+{string.Join(Environment.NewLine, GetProperties().Select(ps => $"        public {ps.validType.RawTypeName} {ps.property.Name} {{get; init;}} = {ps.validType.DefaultValueAssignment};"))}
 {GetTryCreate("TryCreateIntermediate", "Intermediate")}
         public Result<{ClassName}, ErrorList> TryCreate()
             => TryCreateIntermediate().Bind(x => x.TryCreate());
+{GetDtoToMutable()}
     }}";
     public string GetTryCreate(string methodName = "TryCreate", string? className = null)
     {
@@ -122,19 +165,66 @@ partial class {ClassName} : IComplexValidObject<{ClassName}, {ClassName}.Interme
         }
         return "ERROR";
     }
+
     public string GetValidator()
-        => $"    public static IObjectValidator<{ClassName}, Dto> Validator {{ get; }} = ObjectValidator.For<{ClassName}, Dto>();";
+        =>
+            $@"    public static IObjectValidator<{ClassName}, Dto> Validator => Validators.Standard;
+    public static class Validators
+    {{
+        public static readonly IObjectValidator<{ClassName}, Dto> Standard = ObjectValidator.For<{ClassName}, Dto>();
+
+        public static readonly IObjectValidator<ImmutableList<{ClassName}>, ImmutableList<Dto>> List =
+            Standard.ToListValidator();
+
+        public static readonly IObjectValidator<IImmutableSet<{ClassName}>, IImmutableSet<Dto>> Set =
+            Standard.ToSetValidator();
+
+        {GetMutableValidators()}
+     }}
+    ";
+
+    public string GetMutableValidators()
+        => Options.Mutable
+             ? $@"
+         public static readonly IObjectValidator<{ClassName}, Mutable.Dto> Mutable =
+             ObjectValidator.ForMutableDto<{ClassName}, Mutable, Mutable.Dto>();
+
+         public static readonly IObjectValidator<ImmutableList<{ClassName}>, ImmutableList<Mutable>> MutableList =
+             ObjectValidator.MakeMutableListValidator<{ClassName}, Dto, Mutable, Mutable.Dto>();"
+            : "";
     private static string letters = "tuvwxyz";
 
     public string GetIntermediateDto()
         => $@"
     public partial record Intermediate({string.Join(", ", GetProperties().Select(ps => $"{ps.validType.TypeName} {ps.property.Name}"))})
-        : IIntermediateDto<{ClassName}, Dto> 
+        : IIntermediateDto<{ClassName}, Dto> {IfMutable(", IToMutable<Mutable>")}
     {{
 {GetGetDto()}
 {GetIntermediateTryCreate()}
+{IfMutable(GetIntermediateToMutable)}
     }}";
+    
 
+public string GetIntermediateToMutable()
+    => $@"
+        public Mutable GetMutable() 
+        {{
+            var res = new Mutable(new Mutable.Dto
+            {{
+                Cells = new ()
+                {{
+                    {string.Join("," + Environment.NewLine + "                    ",
+                        from p in GetProperties() 
+                        where !p.validType.IsCollection
+                        select $"{p.property.Name} = {{ ValidObject = {p.property.Name} }}")}
+                }}
+            }});
+            {string.Join(Environment.NewLine + "                    ",
+                from p in GetProperties() 
+                where p.validType.IsCollection
+                select $"res.{p.property.Name}.AddRange({p.property.Name}.Select(x => x.GetMutable()));")}
+            return res;
+        }}";
     public string GetIntermediateTryCreate()
     {
         var validationMethods = ValidationMethods;
@@ -165,4 +255,129 @@ partial class {ClassName} : IComplexValidObject<{ClassName}, {ClassName}.Interme
         }
         return $"{method.Name}().ToErrorList({(message!=null ? @$"@""{message.Replace("\"","\"\"")}""" : "")})";
     }
+
+    public string GetSimpleMutableImplementation() => $@"    public Mutable GetMutable() => new(this);
+
+    public class Mutable : ValidationCell<{ClassName}, Mutable.Dto>, IDto<{ClassName}>
+    {{
+{GetMutableDto()}
+{GetMutableDtoConstructors()}
+{string.Join(Environment.NewLine, GetProperties()
+    .Select(p => GetMutableProperty(p.property,p.validType)))}
+        Result<{ClassName}, ErrorList> IDto<{ClassName}>.TryCreate()
+            => AsResult();
+    }}";
+
+    private string? GetMutableProperty(IPropertySymbol property, IValidType validType)
+        => validType.IsCollection
+            ? $@"        public MutableList<{validType.TypeName}.Mutable> {property.Name}
+        {{
+            get => Value.{property.Name};
+            set
+            {{
+                if (!ReferenceEquals(Value.{property.Name}, value))
+                {{
+                    value.{property.Name}.Clear();
+                    value.{property.Name}.AddRange(value);
+                }}
+            }}
+        }}"
+            : validType.IsUnderlyingTypePrimitive
+                ? $@"        public {validType.RawTypeName} {property.Name}
+        {{
+            get => Value.{property.Name};
+            set => Value.{property.Name} = value;
+        }}"
+                : $@"        public {validType.TypeName}.Mutable {property.Name}
+        {{
+            get => Value.{property.Name};
+            set
+            {{
+                if (!ReferenceEquals(Value.{property.Name}, value))
+                {{
+                    value.AsResult().Act(
+                        vo => Value.{property.Name}.ValidObject = vo,
+                        _ => Value.{property.Name}.Value = value.Value;
+                }}
+            }}
+        }}";
+
+    public string GetMutableDtoConstructors()
+        => $@"       public Mutable({ClassName} validObject) : base(Validators.Mutable, validObject)
+        {{ }}
+        public Mutable(Dto value) : base(Validators.Mutable, value)
+        {{ }}
+        public Mutable() : base(Validators.Mutable, new Dto())
+        {{ }}";
+
+    public string GetMutableDto()
+        => $@"        public class Dto : IDto<{ClassName}>, IToMutable<Mutable>, INotifyPropertyChanged
+        {{
+{GetMutableDtoConstructor()}
+{GetCells()}
+{string.Join(Environment.NewLine,
+    from p in GetProperties()
+    select GetMutableDtoProperty(p.property,p.validType))}
+{GetMutableDtoTryCreate()}
+            public Mutable GetMutable() => new(this);
+{GetPropertyChangedImplementation()}
+        }}";
+
+    public string GetMutableDtoTryCreate()
+       => $@"            public Result<{ClassName}, ErrorList> TryCreate()
+            => ({string.Join("," + Environment.NewLine + "                ",
+                GetProperties().Select(p => $"Cells.{p.property.Name}.AsResult({If(p.validType.IsCollection, "Validators.MutableList")}).Prefix(nameof({p.property.Name}))"))})
+               ).Apply(({string.Join(", ", GetProperties().Select((_,x) => letters[x]))})
+                   => new {ClassName}({string.Join(", ", GetProperties().Select((_,x) => letters[x]))}))";
+
+    public string GetMutableDtoConstructor()
+        => $@"            public Dto() 
+            {{
+                Cells = new();
+{string.Join(Environment.NewLine, GetProperties().Select(p => 
+    GetRegisterPropertyChanged(p.property,p.validType)))}            
+            }}";
+
+    public string GetRegisterPropertyChanged(IPropertySymbol property, IValidType validType)
+        => $"            Cells.{property.Name}.PropertyChanged += (sender, e) => OnPropertyChanged(nameof({property.Name}));"
+    + If(validType.IsCollection, () => $"{Environment.NewLine}            Cells.{property.Name}.CollectionChanged += (sender, e) => OnPropertyChanged(nameof({property.Name}));");
+
+    public string GetPropertyChangedImplementation() 
+        => @"            public event PropertyChangedEventHandler? PropertyChanged;
+
+            protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+            {
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            }";
+
+    public string GetCells()
+        => $@"            public struct CellStruct
+            {{
+{string.Join(Environment.NewLine, GetProperties().Select(p =>
+    GetCellStructProperty(p.property, p.validType)))}
+                
+            }}
+            public CellStruct Cells {{ get; }}";
+
+    public string GetCellStructProperty(IPropertySymbol property, IValidType validType)
+        => $@"                public ValidationCell<{validType.TypeName}, {validType.RawTypeName}> {property.Name} {{ get; }} = {GetCellStructPropertyValueAssignment(property,validType)}";
+
+    public string GetCellStructPropertyValueAssignment(IPropertySymbol property, IValidType validType)
+        => validType.IsCollection || validType.IsDictionary || !validType.IsUnderlyingTypePrimitive
+            ? $"new ();"
+            : $"{validType.DefaultValueAssignment}.Constrain().With<{validType.Constraint}>();";
+
+    public string GetMutableDtoProperty(IPropertySymbol property, IValidType validType)
+        => validType.IsCollection || validType.IsDictionary 
+            ?$"            public MutableList<{validType.TypeName}.Mutable> {property.Name} => Cells.{property.Name};"
+            : !validType.IsUnderlyingTypePrimitive
+            ? $"            public {validType.TypeName}.Mutable {property.Name} => Cells.{property.Name};"
+            : $@"            public {validType.RawTypeName} {property.Name}
+            {{
+                get => Cells.{property.Name}.Value;
+                set => Cells.{property.Name}.Value = value;
+            }}";
+
+    public string GetComplexMutableImplementation() => GetSimpleMutableImplementation();
+
 }

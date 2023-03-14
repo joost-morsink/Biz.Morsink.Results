@@ -16,9 +16,15 @@ class ValidDictionaryType : IValidType
     public string TypeName => Type.ToDisplayString();
     public bool IsValidType => ValueType.IsValidType;
     public bool IsComplexValidType => false;
+    public bool IsCollection => false;
+    public bool IsDictionary => true;
+    public Type? CollectionType => typeof(IImmutableDictionary<,>);
+    public bool IsUnderlyingTypePrimitive => ValueType.IsUnderlyingTypePrimitive;
+    public string? Constraint => null;
+
     public string DefaultValueAssignment => DecoratorType.Name == nameof(IImmutableDictionary<object,object>)
-        ? $" = System.Collections.Immutable.ImmutableDictionary<{KeyType.RawTypeName}, {ValueType.RawTypeName}>.Empty;"
-        : $" = {DecoratorType.ContainingNamespace}.{DecoratorType.Name}<{KeyType.RawTypeName}, {ValueType.RawTypeName}>.Empty;";
+        ? $"System.Collections.Immutable.ImmutableDictionary<{KeyType.RawTypeName}, {ValueType.RawTypeName}>.Empty"
+        : $"{DecoratorType.ContainingNamespace}.{DecoratorType.Name}<{KeyType.RawTypeName}, {ValueType.RawTypeName}>.Empty";
     public string ObjectValidator => DecoratorType.ContainingNamespace.ToString() == "System.Collections.Immutable"
         ? KeyType.IsValidType
             ? DecoratorType.Name switch

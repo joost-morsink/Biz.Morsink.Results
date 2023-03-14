@@ -67,7 +67,13 @@ public class TestAddress : IValidObjectWithToMutable<TestAddress, TestAddress.Dt
         City = city;
     }
 
-    object IValidObject.GetDto() => GetDto();
+    public Dto GetDto() => new()
+    {
+        Street = Street.Value,
+        HouseNumber = HouseNumber.Value,
+        ZipCode = ZipCode.Value,
+        City = City.Value
+    };
 
     public Mutable GetMutable() => new(this);
 
@@ -82,15 +88,8 @@ public class TestAddress : IValidObjectWithToMutable<TestAddress, TestAddress.Dt
         }
     };
 
-    public Dto GetDto() => new()
-    {
-        Street = Street.Value,
-        HouseNumber = HouseNumber.Value,
-        ZipCode = ZipCode.Value,
-        City = City.Value
-    };
 
-    public class Dto : IDto<TestAddress, Dto>, IToMutable<Mutable>
+    public record Dto : IDto<TestAddress, Dto>, IToMutable<Mutable>
     {
         public string Street { get; init; } = "";
         public string HouseNumber { get; init; } = "";
@@ -140,7 +139,7 @@ public class TestAddress : IValidObjectWithToMutable<TestAddress, TestAddress.Dt
                 public ValidationCell<NonEmptyString, string> City { get; } = "".Constrain().With<NotEmpty>();
             }
 
-            public CellsStruct Cells { get; internal set; }
+            public CellsStruct Cells { get; }
 
             public string Street
             {
@@ -407,7 +406,7 @@ public class TestPerson : IComplexValidObjectWithToMutable<TestPerson, TestPerso
                 public MutableList<TestAddress.Mutable> Addresses { get; } = new();
             }
 
-            public CellStruct Cells { get; internal set; } 
+            public CellStruct Cells { get; } 
 
             public string FirstName
             {

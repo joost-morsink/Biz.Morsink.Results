@@ -97,6 +97,9 @@ public class MutableList<T> : INotifyCollectionChanged, IReadOnlyList<T>, INotif
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
+
+    public Result<ImmutableList<Vo>, ErrorList> AsResult<Vo>(IObjectValidator<Vo, T> validator)
+        => _inner.Select(x => validator.TryCreate(x)).SequenceList();
 }
 
 public class MutableSet<T> : INotifyCollectionChanged, IReadOnlyCollection<T>
