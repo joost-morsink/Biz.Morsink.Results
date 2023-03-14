@@ -1,5 +1,8 @@
 using System.Collections;
 using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+
 namespace Biz.Morsink.ValidObjects.Mutable;
 
 public static class MutableCollectionsExt
@@ -14,44 +17,61 @@ public static class MutableCollectionsExt
         => coll is IImmutableSet<T> imSet ? imSet.ToMutableSet() : new (coll.ToImmutableHashSet());
 }
 
-public class MutableList<T> : INotifyCollectionChanged, IReadOnlyList<T>, IHasStateVersion
+public class MutableList<T> : INotifyCollectionChanged, IReadOnlyList<T>, INotifyPropertyChanged
 {
     private ImmutableList<T> _inner;
-    private readonly StateVersion _stateVersion = new();
     public MutableList() : this(ImmutableList<T>.Empty) { }
     public MutableList(ImmutableList<T> inner)
     {
         _inner = inner;
+        foreach (var x in _inner)
+            if(x is INotifyPropertyChanged npc)
+                npc.PropertyChanged += OnItemChanged;
+    }
+
+    private void OnItemChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        OnPropertyChanged("Item");
     }
     public ImmutableList<T> ToImmutable()
         => _inner;
     public void Add(T item)
     {
         _inner = _inner.Add(item);
+        if(item is INotifyPropertyChanged npc)
+            npc.PropertyChanged += OnItemChanged;
         OnNotifyCollectionChanged(new (NotifyCollectionChangedAction.Add, item));
     }
 
     public void SetItem(int index, T item)
     {
         var old = _inner[index];
+        if(old is INotifyPropertyChanged npc)
+            npc.PropertyChanged -= OnItemChanged;
         _inner = _inner.SetItem(index, item);
+        if(item is INotifyPropertyChanged npc2)
+            npc2.PropertyChanged += OnItemChanged;
         OnNotifyCollectionChanged(new (NotifyCollectionChangedAction.Replace, old, item, index));
     }
     public void Remove(int index)
     {
         var old = _inner[index];
+        if(old is INotifyPropertyChanged npc)
+            npc.PropertyChanged -= OnItemChanged;
         _inner = _inner.RemoveAt(index);
         OnNotifyCollectionChanged(new (NotifyCollectionChangedAction.Remove));
     }
     public void Clear()
     {
+        foreach(var x in _inner)
+            if(x is INotifyPropertyChanged npc)
+                npc.PropertyChanged -= OnItemChanged;
         _inner = _inner.Clear();
         OnNotifyCollectionChanged(new (NotifyCollectionChangedAction.Reset));
     }
     public event NotifyCollectionChangedEventHandler? CollectionChanged;
     protected void OnNotifyCollectionChanged(NotifyCollectionChangedEventArgs args)
     {
-        _stateVersion.Next();
         CollectionChanged?.Invoke(this, args);
     }
     public IEnumerator<T> GetEnumerator()
@@ -70,15 +90,18 @@ public class MutableList<T> : INotifyCollectionChanged, IReadOnlyList<T>, IHasSt
         foreach(var item in select)
             Add(item);
     }
-    public StateValue GetStateVersion()
-        => _stateVersion.Value
-            ^ _inner.Aggregate(StateValue.Zero, (acc,x) => acc ^ (x as IHasStateVersion)?.GetStateVersion() ?? StateValue.Zero);
+    
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
 }
 
-public class MutableSet<T> : INotifyCollectionChanged, IReadOnlyCollection<T>, IHasStateVersion
+public class MutableSet<T> : INotifyCollectionChanged, IReadOnlyCollection<T>
 {
     private IImmutableSet<T> _inner;
-    private readonly StateVersion _stateVersion = new();
     public MutableSet(IImmutableSet<T> inner)
     {
         _inner = inner;
@@ -120,10 +143,7 @@ public class MutableSet<T> : INotifyCollectionChanged, IReadOnlyCollection<T>, I
 
     protected virtual void OnNotifyCollectionChanged(NotifyCollectionChangedEventArgs eventArgs)
     {
-        _stateVersion.Next();
         CollectionChanged?.Invoke(this, eventArgs);
     }
 
-    public StateValue GetStateVersion()
-        => _stateVersion.Value;
 }

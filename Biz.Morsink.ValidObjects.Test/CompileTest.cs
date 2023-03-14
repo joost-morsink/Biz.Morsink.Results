@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.ComponentModel;
 using System.Data;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Biz.Morsink.Results;
 using Biz.Morsink.Results.Errors;
 using Biz.Morsink.ValidObjects.Generator;
@@ -88,7 +90,7 @@ public class TestAddress : IValidObjectWithToMutable<TestAddress, TestAddress.Dt
         City = City.Value
     };
 
-    public class Dto : HasConstantStateVersion, IDto<TestAddress, Dto>, IToMutable<Mutable>
+    public class Dto : IDto<TestAddress, Dto>, IToMutable<Mutable>
     {
         public string Street { get; init; } = "";
         public string HouseNumber { get; init; } = "";
@@ -115,8 +117,17 @@ public class TestAddress : IValidObjectWithToMutable<TestAddress, TestAddress.Dt
 
     public class Mutable : ValidationCell<TestAddress, Mutable.Dto>, IDto<TestAddress>
     {
-        public class Dto : IDto<TestAddress>, IToMutable<Mutable>, IHasStateVersion
+        public class Dto : IDto<TestAddress>, IToMutable<Mutable>, INotifyPropertyChanged
         {
+            public Dto()
+            {
+                Cells = new();
+                Cells.Street.PropertyChanged += (sender, args) => OnPropertyChanged(nameof(Street));
+                Cells.HouseNumber.PropertyChanged += (sender, args) => OnPropertyChanged(nameof(HouseNumber));
+                Cells.ZipCode.PropertyChanged += (sender, args) => OnPropertyChanged(nameof(ZipCode));
+                Cells.City.PropertyChanged += (sender, args) => OnPropertyChanged(nameof(City));
+            }
+
             public struct CellsStruct
             {
                 public CellsStruct()
@@ -129,7 +140,7 @@ public class TestAddress : IValidObjectWithToMutable<TestAddress, TestAddress.Dt
                 public ValidationCell<NonEmptyString, string> City { get; } = "".Constrain().With<NotEmpty>();
             }
 
-            public CellsStruct Cells { get; internal set; } = new();
+            public CellsStruct Cells { get; internal set; }
 
             public string Street
             {
@@ -171,15 +182,16 @@ public class TestAddress : IValidObjectWithToMutable<TestAddress, TestAddress.Dt
                     ZipCode = ZipCode,
                     City = City
                 };
-
-            public StateValue GetStateVersion()
-                => StateVersion.Combine(Cells.Street,
-                    Cells.HouseNumber,
-                    Cells.ZipCode,
-                    Cells.City);
-
+            
             public Mutable GetMutable()
                 => new(this);
+
+            public event PropertyChangedEventHandler? PropertyChanged;
+
+            protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+            {
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            }
         }
 
         public Mutable(TestAddress validObject) : base(Validators.Mutable, validObject)
@@ -193,59 +205,29 @@ public class TestAddress : IValidObjectWithToMutable<TestAddress, TestAddress.Dt
         public Mutable() : base(Validators.Mutable, new Dto())
         {
         }
-
-        public override StateValue GetStateVersion() => Value.GetStateVersion();
-
+        
         public string Street
         {
             get => Value.Street;
-            set
-            {
-                if (!ReferenceEquals(Value.Street, value))
-                {
-                    Value.Street = value;
-                    ResetValidationCheck();
-                }
-            }
+            set => Value.Street = value;
         }
 
         public string HouseNumber
         {
             get => Value.HouseNumber;
-            set
-            {
-                if (!ReferenceEquals(Value.HouseNumber, value))
-                {
-                    Value.HouseNumber = value;
-                    ResetValidationCheck();
-                }
-            }
+            set => Value.HouseNumber = value;
         }
 
         public string ZipCode
         {
             get => Value.ZipCode;
-            set
-            {
-                if (!ReferenceEquals(Value.ZipCode, value))
-                {
-                    Value.ZipCode = value;
-                    ResetValidationCheck();
-                }
-            }
+            set => Value.ZipCode = value;
         }
 
         public string City
         {
             get => Value.City;
-            set
-            {
-                if (!ReferenceEquals(Value.City, value))
-                {
-                    Value.City = value;
-                    ResetValidationCheck();
-                }
-            }
+            set => Value.City = value;
         }
 
         Result<TestAddress, ErrorList> IDto<TestAddress>.TryCreate()
@@ -400,8 +382,18 @@ public class TestPerson : IComplexValidObjectWithToMutable<TestPerson, TestPerso
 
     public class Mutable : ValidationCell<TestPerson, Mutable.Dto>, IDto<TestPerson>
     {
-        public class Dto : IDto<TestPerson>, IToMutable<Mutable>, IHasStateVersion
+        public class Dto : IDto<TestPerson>, IToMutable<Mutable>, INotifyPropertyChanged
         {
+            public Dto()
+            {
+                Cells = new();
+                Cells.FirstName.PropertyChanged += (s, e) => OnPropertyChanged(nameof(FirstName));
+                Cells.LastName.PropertyChanged += (s, e) => OnPropertyChanged(nameof(LastName));
+                Cells.Age.PropertyChanged+= (s, e) => OnPropertyChanged(nameof(Age));
+                Cells.MainAddress.PropertyChanged+= (s, e) => OnPropertyChanged(nameof(MainAddress));
+                Cells.Addresses.CollectionChanged += (s, e) => OnPropertyChanged(nameof(Addresses));
+                Cells.Addresses.PropertyChanged += (s, e) => OnPropertyChanged(nameof(Addresses));
+            }
             public struct CellStruct
             {
                 public CellStruct()
@@ -415,7 +407,7 @@ public class TestPerson : IComplexValidObjectWithToMutable<TestPerson, TestPerso
                 public MutableList<TestAddress.Mutable> Addresses { get; } = new();
             }
 
-            public CellStruct Cells { get; internal set; } = new();
+            public CellStruct Cells { get; internal set; } 
 
             public string FirstName
             {
@@ -435,15 +427,9 @@ public class TestPerson : IComplexValidObjectWithToMutable<TestPerson, TestPerso
                 set => Cells.Age.Value = value;
             }
 
-            public TestAddress.Mutable MainAddress
-            {
-                get => Cells.MainAddress;
-            }
-
-            public MutableList<TestAddress.Mutable> Addresses
-            {
-                get => Cells.Addresses;
-            }
+            public TestAddress.Mutable MainAddress => Cells.MainAddress;
+            
+            public MutableList<TestAddress.Mutable> Addresses => Cells.Addresses;
 
 
             public Result<TestPerson, ErrorList> TryCreate()
@@ -456,15 +442,14 @@ public class TestPerson : IComplexValidObjectWithToMutable<TestPerson, TestPerso
                             .Prefix(nameof(Addresses)))
                     .Apply((firstName, lastName, age, mainAddress, addresses)
                         => new TestPerson(firstName, lastName, age, mainAddress, addresses));
-
-            public StateValue GetStateVersion()
-                => StateVersion.Combine(Cells.FirstName,
-                    Cells.LastName,
-                    Cells.Age,
-                    MainAddress,
-                    Addresses);
-
+            
             public Mutable GetMutable() => new(this);
+            public event PropertyChangedEventHandler? PropertyChanged;
+
+            protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+            {
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            }
         }
 
         public Mutable(TestPerson validObject) : base(Validators.Mutable, validObject)
@@ -478,53 +463,29 @@ public class TestPerson : IComplexValidObjectWithToMutable<TestPerson, TestPerso
         public Mutable() : base(Validators.Mutable, new Dto())
         {
         }
-
-        public override StateValue GetStateVersion()
-            => Value.GetStateVersion();
-
+        
         public string FirstName
         {
             get => Value.FirstName;
-            set
-            {
-                if (!ReferenceEquals(Value.FirstName, value))
-                {
-                    Value.FirstName = value;
-                    ResetValidationCheck();
-                }
-            }
+            set => Value.FirstName = value;
         }
 
         public string LastName
         {
             get => Value.LastName;
-            set
-            {
-                if (!ReferenceEquals(Value.LastName, value))
-                {
-                    Value.LastName = value;
-                    ResetValidationCheck();
-                }
-            }
+            set => Value.LastName = value;
         }
 
         public int Age
         {
             get => Value.Age;
-            set
-            {
-                if (Value.Age != value)
-                {
-                    Value.Age = value;
-                    ResetValidationCheck();
-                }
-            }
+            set => Value.Age = value;
         }
 
         public TestAddress.Mutable MainAddress
         {
             get => Value.MainAddress;
-            set
+            set 
             {
                 if (!ReferenceEquals(Value.MainAddress, value))
                 {
@@ -555,17 +516,17 @@ public class TestPerson : IComplexValidObjectWithToMutable<TestPerson, TestPerso
     }
 }
 
-[ValidObject]
+[ValidObject(Mutable = true)]
 public partial class Address
 {
     public NonEmptyString Street { get; }
     public NonEmptyString HouseNumber { get; }
     public ZipCodeString ZipCode { get; }
     public NonEmptyString City { get; }
-    public NonEmptyString Country { get; }
+    //public NonEmptyString Country { get; }
 }
 
-[ValidObject]
+[ValidObject(Mutable = true)]
 public partial class Person
 {
     public NonEmptyString FirstName { get; }
@@ -573,8 +534,8 @@ public partial class Person
     public NaturalNumber Age { get; }
     public Address MainAddress { get; }
     public ImmutableList<Address> Addresses { get; }
-    public NaturalNumber LuckyNumber { get; }
-    public IImmutableSet<Valid<string, Identifier>> Tags { get; }
+    // public NaturalNumber LuckyNumber { get; }
+    // public IImmutableSet<Valid<string, Identifier>> Tags { get; }
 
     [ValidationMethod]
     private IEnumerable<string> Check()
@@ -639,7 +600,7 @@ public class CompileTest
             },
             Addresses =
             {
-                new TestAddress.Mutable()
+                new ()
                 {
                     Street = "Teststraat",
                     HouseNumber = "1",
@@ -648,10 +609,21 @@ public class CompileTest
                 }
             }
         };
+        p.FirstName = "Joost-Willem";
         p.ValidObject.Should().NotBeNull();
         p.Errors.Should().HaveCount(0);
+
         p.Addresses[0].ValidObject.Should().Be(p.ValidObject!.Addresses[0]);
-        ReferenceEquals(p.Addresses[0].ValidObject, p.ValidObject!.Addresses[0]).Should().BeTrue();
+        p.Addresses[0].ValidObject.Should().BeSameAs(p.ValidObject!.Addresses[0]);
+        p.Value!.Addresses[0].Should().BeSameAs(p.Addresses[0]);
+
+        var mainAddress = p.ValidObject.MainAddress;
+        p.Addresses[0].City = "Testdorp";
+
+        p.ValidObject.MainAddress.Should().BeSameAs(mainAddress);
+        p.Addresses[0].ValidObject.Should().Be(p.ValidObject!.Addresses[0]);
+        p.Addresses[0].ValidObject.Should().BeSameAs(p.ValidObject!.Addresses[0]);
+        p.Value!.Addresses[0].Should().BeSameAs(p.Addresses[0]);
         
         p.Addresses[0].ZipCode = "12345";
         p.IsValid.Should().BeFalse();
@@ -674,7 +646,7 @@ public class CompileTest
         var vo = p.ValidObject!;
         p.ValidObject.Should().NotBeNull();
         p.Errors.Should().HaveCount(0);
-        
+
         p.ZipCode = "12345";
         p.IsValid.Should().BeFalse();
         p.Errors.Should().Contain(e => e.Key.ToString() == "ZipCode");
@@ -682,6 +654,5 @@ public class CompileTest
         p.ZipCode = "1234AB";
         p.ValidObject.Should().BeEquivalentTo(vo);
         p.ValidObject.Should().NotBe(vo);
-
     }
 }

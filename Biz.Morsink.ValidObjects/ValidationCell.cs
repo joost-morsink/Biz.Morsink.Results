@@ -1,33 +1,33 @@
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace Biz.Morsink.ValidObjects;
 
-public class ValidationCell<TVo, TDto> : IHasStateVersion, IValidationCell<TVo, TDto> where TVo : class
+public class ValidationCell<TVo, TDto> : IValidationCell<TVo, TDto>, INotifyPropertyChanged
+    where TVo : class
 {
     private readonly IObjectValidator<TVo, TDto> _validator;
     private Lazy<Result<TVo, ErrorList>> _validObject;
     private TDto _value;
-    private StateValue _lastEvaluatedStateVersion = StateValue.Zero;
-    private readonly StateVersion _stateVersion = new();
     
     public ValidationCell(IObjectValidator<TVo, TDto> validator, TVo validObject)
     {
         _validator = validator;
-        _value = validator.GetDto(validObject);
+        _value = default!; // GetLazyValid will set it
         _validObject = GetLazyValid(validObject);
     }
 
     public ValidationCell(IObjectValidator<TVo, TDto> validator, TDto value)
     {
         _validator = validator;
-        _value = value;
+        _value = default!; // SetValue will set it
+        SetValue(value, true);
         _validObject = GetLazyValidation();
     }
 
-    private Result<TVo,ErrorList> ValidateNow()
+    private Result<TVo, ErrorList> ValidateNow()
     { 
-        if(_validObject.IsValueCreated && _lastEvaluatedStateVersion != GetStateVersion())
-            _validObject = GetLazyValidation();
         return _validObject.Value;
     }
     public bool IsValid => ValidateNow().IsSuccess;
@@ -35,30 +35,45 @@ public class ValidationCell<TVo, TDto> : IHasStateVersion, IValidationCell<TVo, 
     public virtual TDto Value
     {
         get => _value;
-        set  {
-            if(!ReferenceEquals(_value, value))
-            {
-                _value = value;
-                ResetValidationCheck();
-            }
+        set
+        {
+            if (!EqualityComparer<TDto>.Default.Equals(_value, value))
+                SetValue(value);
         }
+    }
+
+    protected void SetValue(TDto value, bool direct = false)
+    {
+        if(_value is INotifyPropertyChanged npc)
+            npc.PropertyChanged -= OnValueChanged;
+        
+        if (direct)
+            _value = value;
+        else
+            SetField(ref _value, value);
+        
+        if(value is INotifyPropertyChanged npc2)
+            npc2.PropertyChanged += OnValueChanged;
+    }
+
+    protected virtual void OnValueChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        OnPropertyChanged(nameof(Value));
     }
     
     [DisallowNull]
     public virtual TVo? ValidObject
     {
         get => ValidateNow().Switch(x => (TVo?) x, x => null);
-        set 
-        {             
-            _validObject = new Lazy<Result<TVo, ErrorList>>(() => value);
-            var _ = _validObject.Value;
-            Value = _validator.GetDto(value);
+        set
+        {
+            _validObject = GetLazyValid(value);
+            OnPropertyChanged();
         }
     }
 
     protected void ResetValidationCheck()
     {
-        _stateVersion.Next();
         if(_validObject.IsValueCreated)
             _validObject = GetLazyValidation();
     }
@@ -66,15 +81,13 @@ public class ValidationCell<TVo, TDto> : IHasStateVersion, IValidationCell<TVo, 
     private Lazy<Result<TVo, ErrorList>> GetLazyValidation()
         => new (() =>
         {
-            _lastEvaluatedStateVersion = GetStateVersion();
             return _validator.TryCreate(_value);
         });
 
     private Lazy<Result<TVo, ErrorList>> GetLazyValid(TVo validObject)
     {
-        _value = _validator.GetDto(validObject);
-        _stateVersion.Next();
-        _lastEvaluatedStateVersion = GetStateVersion();
+        SetValue(_validator.GetDto(validObject));
+
         var res = new Lazy<Result<TVo, ErrorList>>(() => validObject);
         var _ = res.Value;
         return res;
@@ -89,6 +102,20 @@ public class ValidationCell<TVo, TDto> : IHasStateVersion, IValidationCell<TVo, 
     public Result<TVo, ErrorList> AsResult()
         => ValidateNow();
     
-    public virtual StateValue GetStateVersion()
-        => _stateVersion.Value;
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        if(propertyName != nameof(ValidObject))
+            ResetValidationCheck();
+    }
+
+    protected bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
+    {
+        if (EqualityComparer<T>.Default.Equals(field, value)) return false;
+        field = value;
+        OnPropertyChanged(propertyName);
+        return true;
+    }
 }

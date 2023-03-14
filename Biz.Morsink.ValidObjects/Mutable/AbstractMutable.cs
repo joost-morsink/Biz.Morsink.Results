@@ -35,11 +35,4 @@ public abstract class AbstractMutable<T, D> : ValidationCell<T, D>, INotifyPrope
             }
         }
     }
-    
-    public event PropertyChangedEventHandler? PropertyChanged;
-
-    protected virtual void OnPropertyChanged(string propertyName)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    }
 }

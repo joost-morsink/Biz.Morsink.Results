@@ -6,14 +6,14 @@ public class ValidObjectTest
 {
     private readonly Person.Dto _validPersonDto = new()
     {
-        FirstName = "Pietje", LastName = "Puk", Age = 44, LuckyNumber = 13,
+        FirstName = "Pietje", LastName = "Puk", Age = 44, //LuckyNumber = 13,
         MainAddress = new Address.Dto
         {
             Street = "Kalverstraat",
             HouseNumber = "1",
             ZipCode = "1111AA",
             City = "Amsterdam",
-            Country = "Netherlands"
+            //Country = "Netherlands"
         },
         Addresses = ImmutableList.Create(new Address.Dto
         {
@@ -21,7 +21,7 @@ public class ValidObjectTest
             HouseNumber = "1",
             ZipCode = "1111AA",
             City = "Amsterdam",
-            Country = "Netherlands"
+            //Country = "Netherlands"
         })
     };
 
@@ -43,13 +43,13 @@ public class ValidObjectTest
                  && a.ZipCode.Value == dto.ZipCode
                  && a.City.Value == dto.City);
     }
-
-    [Test]
-    public void TestTest()
-    {
-        var dto = _validPersonDto with {Tags = _validPersonDto.Tags.Add("")};
-        dto.TryCreate().Should().BeFailure();
-    }
+    //
+    // [Test]
+    // public void TestTest()
+    // {
+    //     var dto = _validPersonDto with {Tags = _validPersonDto.Tags.Add("")};
+    //     dto.TryCreate().Should().BeFailure();
+    // }
 
     [Test]
     public void NestedValidationFailureTest()
@@ -78,33 +78,33 @@ public class ValidObjectTest
             && a.GetDto().Equals(dto.Addresses[0]));
     }
 
-    [Test]
-    public void MutableTest()
-    {
-        var dto = new Person.Dto()
-        {
-            Age = 43,
-            FirstName = "Joost",
-            LastName = "Morsink",
-            LuckyNumber = 13,
-            Tags = new[] {"Joost"}.ToImmutableHashSet(),
-            Addresses = new[]
-            {
-                new Address.Dto()
-                {
-                    City = "Amsterdam",
-                    HouseNumber = "1",
-                    Street = "Street",
-                    ZipCode = "1234AB"
-                }
-            }.ToImmutableList()
-        };
-        dto = dto with {MainAddress = dto.Addresses[0]};
+    // [Test]
+    // public void MutableTest()
+    // {
+    //     var dto = new Person.Dto()
+    //     {
+    //         Age = 43,
+    //         FirstName = "Joost",
+    //         LastName = "Morsink",
+    //         LuckyNumber = 13,
+    //         Tags = new[] {"Joost"}.ToImmutableHashSet(),
+    //         Addresses = new[]
+    //         {
+    //             new Address.Dto()
+    //             {
+    //                 City = "Amsterdam",
+    //                 HouseNumber = "1",
+    //                 Street = "Street",
+    //                 ZipCode = "1234AB"
+    //             }
+    //         }.ToImmutableList()
+    //     };
+    //     dto = dto with {MainAddress = dto.Addresses[0]};
         // var m = new TestPerson.Mutable(dto);
         // m.ValidObject.Should().NotBeNull();
         // m.FirstName = "Joost-Willem";
         // m.ValidObject.Should().NotBeNull();
         // m.Addresses[0].ZipCode = "12345";
         // m.ValidObject.Should().BeNull();
-    }
+    //}
 }

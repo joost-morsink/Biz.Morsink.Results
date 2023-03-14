@@ -17,14 +17,3 @@ public interface IDto
 {
     IResult<object, ErrorList> TryCreate();
 }
-
-public interface IHasStateVersion
-{
-    StateValue GetStateVersion();
-}
-
-public abstract class HasConstantStateVersion : IHasStateVersion
-{
-    private readonly StateValue _stateVersion = StateVersion.Single();
-    public StateValue GetStateVersion() => _stateVersion;
-}
