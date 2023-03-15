@@ -11,6 +11,7 @@ public class ValidNullableType : IValidType
     public string TypeName => _underlyingType.TypeName + "?";
     public bool IsValidType => _underlyingType.IsValidType;
     public bool IsComplexValidType => false;
+    public IValidType? ElementType => null;
     public bool IsCollection => false;
     public bool IsDictionary => false;
     public Type? CollectionType => null;

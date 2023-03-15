@@ -74,6 +74,7 @@ class ValidType : IValidType
     
     public bool IsValidType => GenerateAttribute != null || !SymbolEqualityComparer.Default.Equals(Type, RawType);
     public bool IsComplexValidType => GenerateAttribute != null && ValidationMethods.Length > 0;
+    public IValidType? ElementType => null;
     public bool IsCollection => false;
     public bool IsDictionary => false;
     public Type? CollectionType => null;
@@ -91,7 +92,7 @@ class ValidType : IValidType
                 return $"new {RawTypeName}()";
             if (RawTypeName == "string")
                 return "\"\"";
-            return "default";
+            return $"default({RawTypeName})";
         }
     }
 }

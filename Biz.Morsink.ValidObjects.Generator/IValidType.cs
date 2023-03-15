@@ -10,6 +10,7 @@ public interface IValidType
     string TypeName { get; }
     bool IsValidType { get; }
     bool IsComplexValidType { get; }
+    IValidType? ElementType { get; }
     bool IsCollection { get; }
     bool IsDictionary { get; }
     Type? CollectionType { get; }

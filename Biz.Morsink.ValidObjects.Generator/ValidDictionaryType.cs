@@ -16,6 +16,7 @@ class ValidDictionaryType : IValidType
     public string TypeName => Type.ToDisplayString();
     public bool IsValidType => ValueType.IsValidType;
     public bool IsComplexValidType => false;
+    public IValidType? ElementType => ValueType;
     public bool IsCollection => false;
     public bool IsDictionary => true;
     public Type? CollectionType => typeof(IImmutableDictionary<,>);

@@ -45,7 +45,10 @@ public class TestAddress : IValidObjectWithToMutable<TestAddress, TestAddress.Dt
     {
         public static readonly IObjectValidator<TestAddress, Dto> Standard = ObjectValidator.For<TestAddress, Dto>();
 
-        public static readonly IObjectValidator<TestAddress, Mutable.Dto> Mutable =
+        public static readonly IObjectValidator<TestAddress, Mutable> Mutable =
+            ObjectValidator.ForMutable<TestAddress, Mutable, Mutable.Dto>();
+        
+        public static readonly IObjectValidator<TestAddress, Mutable.Dto> MutableDto =
             ObjectValidator.ForMutableDto<TestAddress, Mutable, Mutable.Dto>();
 
         public static readonly IObjectValidator<ImmutableList<TestAddress>, ImmutableList<Dto>> List =
@@ -139,7 +142,7 @@ public class TestAddress : IValidObjectWithToMutable<TestAddress, TestAddress.Dt
                 public ValidationCell<NonEmptyString, string> City { get; } = "".Constrain().With<NotEmpty>();
             }
 
-            public CellsStruct Cells { get; }
+            public CellsStruct Cells { get; internal set; }
 
             public string Street
             {
@@ -193,15 +196,15 @@ public class TestAddress : IValidObjectWithToMutable<TestAddress, TestAddress.Dt
             }
         }
 
-        public Mutable(TestAddress validObject) : base(Validators.Mutable, validObject)
+        public Mutable(TestAddress validObject) : base(Validators.MutableDto, validObject)
         {
         }
 
-        public Mutable(Dto value) : base(Validators.Mutable, value)
+        public Mutable(Dto value) : base(Validators.MutableDto, value)
         {
         }
 
-        public Mutable() : base(Validators.Mutable, new Dto())
+        public Mutable() : base(Validators.MutableDto, new Dto())
         {
         }
         
@@ -262,7 +265,10 @@ public class TestPerson : IComplexValidObjectWithToMutable<TestPerson, TestPerso
         public static readonly IObjectValidator<IImmutableSet<TestPerson>, IImmutableSet<Dto>> Set =
             Standard.ToSetValidator();
 
-        public static readonly IObjectValidator<TestPerson, Mutable.Dto> Mutable =
+        public static readonly IObjectValidator<TestPerson, Mutable> Mutable =
+            ObjectValidator.ForMutable<TestPerson, Mutable, Mutable.Dto>();
+        
+        public static readonly IObjectValidator<TestPerson, Mutable.Dto> MutableDto =
             ObjectValidator.ForMutableDto<TestPerson, Mutable, Mutable.Dto>();
 
         public static readonly IObjectValidator<ImmutableList<TestPerson>, ImmutableList<Mutable>> MutableList =
@@ -406,7 +412,7 @@ public class TestPerson : IComplexValidObjectWithToMutable<TestPerson, TestPerso
                 public MutableList<TestAddress.Mutable> Addresses { get; } = new();
             }
 
-            public CellStruct Cells { get; } 
+            public CellStruct Cells { get; internal set; } 
 
             public string FirstName
             {
@@ -436,9 +442,8 @@ public class TestPerson : IComplexValidObjectWithToMutable<TestPerson, TestPerso
                         Cells.LastName.AsResult().Prefix(nameof(LastName)),
                         Cells.Age.AsResult().Prefix(nameof(Age)),
                         Cells.MainAddress.AsResult().Prefix(nameof(MainAddress)),
-                        //Cells.Addresses.AsResult().Prefix(nameof(Addresses)))
-                        TestAddress.Validators.MutableList.TryCreate(Cells.Addresses.ToImmutableList())
-                            .Prefix(nameof(Addresses)))
+                        
+                        Cells.Addresses.AsResult(TestAddress.Validators.MutableList).Prefix(nameof(Addresses)))
                     .Apply((firstName, lastName, age, mainAddress, addresses)
                         => new TestPerson(firstName, lastName, age, mainAddress, addresses));
             
@@ -451,15 +456,15 @@ public class TestPerson : IComplexValidObjectWithToMutable<TestPerson, TestPerso
             }
         }
 
-        public Mutable(TestPerson validObject) : base(Validators.Mutable, validObject)
+        public Mutable(TestPerson validObject) : base(Validators.MutableDto, validObject)
         {
         }
 
-        public Mutable(Dto value) : base(Validators.Mutable, value)
+        public Mutable(Dto value) : base(Validators.MutableDto, value)
         {
         }
 
-        public Mutable() : base(Validators.Mutable, new Dto())
+        public Mutable() : base(Validators.MutableDto, new Dto())
         {
         }
         
@@ -585,7 +590,7 @@ public class CompileTest
     [Test]
     public void IntTest()
     {
-        var p = new TestPerson.Mutable()
+        var p = new Person.Mutable()
         {
             FirstName = "Joost",
             LastName = "Morsink",
@@ -635,7 +640,7 @@ public class CompileTest
     public void AddressTest()
     {
         var p =
-            new TestAddress.Mutable()
+            new Address.Mutable()
             {
                 Street = "Teststraat",
                 HouseNumber = "1",

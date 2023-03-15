@@ -18,9 +18,9 @@ public static class ObjectValidator
         where Dto : IDto<Vo, Dto>
         => new Impl<Vo, Dto>();
 
-    private class MutableImpl<Vo, Mut> : IObjectValidator<Vo, Mut>
+    private class MutableImpl<Vo, Mut, MutDto> : IObjectValidator<Vo, Mut>
         where Vo : class, IValidObjectWithToMutable<Vo, Mut>
-        where Mut : IValidationCell<Vo, Mut>, IDto<Vo>
+        where Mut : IValidationCell<Vo, MutDto>, IDto<Vo>
     {
         public Result<Vo, ErrorList> TryCreate(Mut dto)
             => dto.AsResult();
@@ -28,10 +28,10 @@ public static class ObjectValidator
         public Mut GetDto(Vo validObject)
             => validObject.GetMutable();
     }
-    public static IObjectValidator<Vo,Mut> ForMutable<Vo,Mut>()
+    public static IObjectValidator<Vo,Mut> ForMutable<Vo,Mut,MutDto>()
         where Vo : class, IValidObjectWithToMutable<Vo, Mut>
-        where Mut : IValidationCell<Vo, Mut>, IDto<Vo>
-        => new MutableImpl<Vo, Mut>();
+        where Mut : IValidationCell<Vo, MutDto>, IDto<Vo>
+        => new MutableImpl<Vo, Mut, MutDto>();
 
     private class MutableDtoImpl<Vo, Mut, MutDto> : IObjectValidator<Vo, MutDto>
         where Vo : class, IValidObjectWithToMutable<Vo, Mut, MutDto>

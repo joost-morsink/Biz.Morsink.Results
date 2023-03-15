@@ -1,4 +1,7 @@
 ﻿using System.Collections.Immutable;
+using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using Biz.Morsink.Results;
 using Biz.Morsink.Results.Errors;
 using Biz.Morsink.ValidObjects;
@@ -95,20 +98,21 @@ driver.RunGeneratorsAndUpdateCompilation(inputCompilation, out var outputCompila
 
 
 var result = outputCompilation.Emit("test.exe");
-
+var warnAndErrors = result.Diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning);
 Console.WriteLine(result);
 
 static Compilation CreateCompilation(string source)
 {
-    var refs = AppDomain.CurrentDomain.GetAssemblies().Where(a => a.GetName().Name == "System.Runtime")
-        .Concat(new [] { typeof(object), typeof(Console), typeof(ValidObjectAttribute), typeof(Result), typeof(ImmutableList)}.Select(x => x.Assembly))
+    var refs = AppDomain.CurrentDomain.GetAssemblies().Where(a => a.GetName().Name is "System.Runtime")
+        .Concat(new [] { typeof(object), typeof(Console), typeof(ValidObjectAttribute), typeof(Result), typeof(ImmutableList), typeof(INotifyPropertyChanged), typeof(INotifyCollectionChanged), typeof(CallerMemberNameAttribute), typeof(Enumerable)}.Select(x => x.Assembly))
         .Select(a => a.Location)
         .Distinct()
         .Select(x => MetadataReference.CreateFromFile(x))
         .ToArray();
     var opts = new CSharpCompilationOptions(OutputKind.ConsoleApplication);
-    
-    
+
+
+
     return CSharpCompilation.Create("compilation",
         new[] { CSharpSyntaxTree.ParseText(source) },
         refs,
