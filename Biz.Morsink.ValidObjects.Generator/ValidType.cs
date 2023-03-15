@@ -7,6 +7,11 @@ class ValidType : IValidType
     public ValidType(ITypeSymbol type)
     {
         Type = type;
+        Constraint = Type.ContainingNamespace.ToString() == "Biz.Morsink.ValidObjects"
+                     && Type.Name == "Valid"
+                     && Type is INamedTypeSymbol nts and {Arity:2}
+            ? nts.TypeArguments[1].ToString()
+            : null;
         StaticValidator = Type.Interfaces
             .FirstOrDefault(itf => itf.ContainingNamespace.ToString() == "Biz.Morsink.ValidObjects"
                 && itf.Name == "IHasStaticValidator"
@@ -22,10 +27,12 @@ class ValidType : IValidType
                 && itf.Name == "IValidObject"
                 && itf.Arity == 1);
         GenerateAttribute = Type.GetAttributes().FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == "Biz.Morsink.ValidObjects.ValidObjectAttribute");
+        GenerateMutable = GenerateAttribute?.NamedArguments.Any(n => n is {Key: "Mutable", Value.Value: bool and true}) ?? false;
         ValidationMethods = Type.GetMembers().Where(m
                 => m.Kind == SymbolKind.Method
                 && m.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == "Biz.Morsink.ValidObjects.ValidationMethodAttribute"))
             .ToImmutableArray();
+        
         RawType = StaticValidator?.TypeArguments[1]
             ?? FullInterface?.TypeArguments[1]
             ?? VoInterface?.TypeArguments[0]
@@ -40,6 +47,8 @@ class ValidType : IValidType
     public INamedTypeSymbol? FullInterface { get; }
     public INamedTypeSymbol? VoInterface { get; }
     public AttributeData? GenerateAttribute { get; }
+    public bool GenerateMutable { get; }
+
     public string GetTryCreate(string name)
         => FullInterface != null || GenerateAttribute != null
             ? $"{name}.TryCreate().Prefix(nameof({name}))"
@@ -65,16 +74,25 @@ class ValidType : IValidType
     
     public bool IsValidType => GenerateAttribute != null || !SymbolEqualityComparer.Default.Equals(Type, RawType);
     public bool IsComplexValidType => GenerateAttribute != null && ValidationMethods.Length > 0;
+    public IValidType? ElementType => null;
+    public bool IsCollection => false;
+    public bool IsDictionary => false;
+    public Type? CollectionType => null;
+    public string? Constraint { get; }
+
+    public bool IsUnderlyingTypePrimitive =>
+        GenerateAttribute == null;
+
 
     public string DefaultValueAssignment
     {
         get
         {
             if (GenerateAttribute != null)
-                return $" = new {RawTypeName}();";
+                return $"new {RawTypeName}()";
             if (RawTypeName == "string")
-                return " = \"\";";
-            return "";
+                return "\"\"";
+            return $"default({RawTypeName})";
         }
     }
 }

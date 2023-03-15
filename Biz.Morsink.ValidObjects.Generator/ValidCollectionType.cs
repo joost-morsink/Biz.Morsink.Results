@@ -16,9 +16,22 @@ class ValidCollectionType : IValidType
     public string TypeName => Type.ToDisplayString();
     public bool IsValidType => ElementType.IsValidType;
     public bool IsComplexValidType => false;
+    public bool IsCollection => true;
+    public bool IsDictionary => false;
+
+    public Type? CollectionType
+        => DecoratorType.Name switch
+        {
+            "ImmutableList" => typeof(ImmutableList<>),
+            "IImmutableSet" => typeof(IImmutableSet<>),
+            _ => null
+        };
+    public bool IsUnderlyingTypePrimitive => ElementType.IsUnderlyingTypePrimitive;
+    public string? Constraint => null;
+
     public string DefaultValueAssignment => DecoratorType.Name == nameof(IImmutableSet<object>)
-        ? $" = System.Collections.Immutable.ImmutableHashSet<{ElementType.RawTypeName}>.Empty;"
-        : $" = {DecoratorType.ContainingNamespace}.{DecoratorType.Name}<{ElementType.RawTypeName}>.Empty;";
+        ? $"System.Collections.Immutable.ImmutableHashSet<{ElementType.RawTypeName}>.Empty"
+        : $"{DecoratorType.ContainingNamespace}.{DecoratorType.Name}<{ElementType.RawTypeName}>.Empty";
     public string ObjectValidator => DecoratorType.ContainingNamespace.ToString() == "System.Collections.Immutable"
         ? DecoratorType.Name switch
         {

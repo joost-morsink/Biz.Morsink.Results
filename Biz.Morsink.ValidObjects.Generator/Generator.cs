@@ -73,8 +73,7 @@ public class Generator : IIncrementalGenerator
 
                 if (fullName == "Biz.Morsink.ValidObjects.ValidObjectAttribute")
                 {
-                    var test = attribute.ArgumentList?.Arguments.FirstOrDefault();
-                    var ne = test?.NameEquals?.Name.ToString();
+                    var test = attribute.ArgumentList?.Arguments.FirstOrDefault(a => a.NameEquals?.Name.ToString() == "Mutable");
                     var val = test?.Expression.ToString();
                     return new(generatorContextNode,  new(val == "true"));
                 }
@@ -85,7 +84,7 @@ public class Generator : IIncrementalGenerator
     }
 }
 
-public record GenerationOptions(bool CellDtos);
+public record GenerationOptions(bool Mutable);
 public record Generation(ClassDeclarationSyntax Class, GenerationOptions Options);
 
 // [Generate] 
