@@ -57,7 +57,7 @@ public partial class Person
     public ImmutableList<Address> Addresses { get; }
    // public NaturalNumber LuckyNumber { get; }
    // public NaturalNumber TestNumber { get; }
-   // public IImmutableSet<Valid<string, Identifier>> Tags { get; }
+    public IImmutableSet<Valid<string, Identifier>> Tags { get; }
 
     [ValidationMethod]
     private IEnumerable<string> Check()

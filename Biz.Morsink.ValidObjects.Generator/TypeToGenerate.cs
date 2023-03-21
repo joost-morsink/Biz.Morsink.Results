@@ -131,16 +131,22 @@ partial class {ClassName} : {GetComplexValidObjectInterface()}, IHasStaticValida
         }};";
 
     public string GetToMutablePropertyAssignment(IPropertySymbol property, IValidType validType)
-        => validType.IsUnderlyingTypePrimitive
-            ? $"{property.Name} = {property.Name}"
-            : validType.IsCollection
-                ? validType.CollectionType!.Name switch
-                {
-                    $"{nameof(ImmutableList<object>)}`1" => $"{property.Name} = new ({property.Name}.Select(x => x.GetMutable()).ToImmutableList())",
-                    $"{nameof(IImmutableSet<object>)}`1" => $"{property.Name} = new ({property.Name}.Select(x => x.GetMutable()).ToImmutableHashSet())",
-                    _ => $"{property.Name} = default({validType.RawTypeName})"
-                }
-                : $"{property.Name} = {property.Name}.GetMutable()";
+    {
+        return validType.IsCollection
+            ? validType.CollectionType!.Name switch
+            {
+                $"{nameof(ImmutableList<object>)}`1" =>
+                    $"{property.Name} = new ({property.Name}.Select(x => x{MethodCall()}).ToImmutableList())",
+                $"{nameof(IImmutableSet<object>)}`1" =>
+                    $"{property.Name} = new ({property.Name}.Select(x => x{MethodCall()}).ToImmutableHashSet())",
+                _ => $"{property.Name} = default({validType.RawTypeName})"
+            }
+            : $"{property.Name} = {property.Name}{If(!validType.IsUnderlyingTypePrimitive, ".GetMutable()")}";
+
+        string MethodCall()
+            => validType.IsUnderlyingTypePrimitive ? $".Constrain().With<{validType.ElementType!.Constraint}>().GetMutable()" : ".GetMutable()";
+    }
+
     public string GetComplexDto()
         => $@"
     public partial record Dto : IComplexDto<{ClassName}, Intermediate, Dto> {IfMutable(", IToMutable<Mutable>")}
@@ -201,7 +207,10 @@ partial class {ClassName} : {GetComplexValidObjectInterface()}, IHasStaticValida
              ObjectValidator.ForMutableDto<{ClassName}, Mutable, Mutable.Dto>();
 
          public static readonly IObjectValidator<ImmutableList<{ClassName}>, ImmutableList<Mutable>> MutableList =
-             ObjectValidator.MakeMutableListValidator<{ClassName}, Dto, Mutable, Mutable.Dto>();"
+             ObjectValidator.MakeMutableListValidator<{ClassName}, Dto, Mutable, Mutable.Dto>();
+
+         public static readonly IObjectValidator<IImmutableSet<{ClassName}>, IImmutableSet<Mutable>> MutableSet =
+             Mutable.ToSetValidator(d => d);"
             : "";
     private static string letters = "tuvwxyz";
 
@@ -290,16 +299,16 @@ public string GetIntermediateToMutable()
 
     public string GetMutableExposedTypeName(IValidType validType)
         => validType.IsCollection
-            ? $"MutableList<{validType.ElementType!.TypeName}.Mutable>"
+            ? $"Mutable{validType.CollectionKind}<{validType.ElementType!.TypeName}.Mutable>"
             : validType.IsUnderlyingTypePrimitive
                 ? validType.RawTypeName
                 : $"{validType.TypeName}.Mutable";
     public string GetMutableTypeName(IValidType validType)
         => validType.IsCollection
-            ? $"MutableList<{validType.ElementType!.TypeName}.Mutable>"
+            ? $"Mutable{validType.CollectionKind}<{validType.ElementType!.TypeName}.Mutable>"
             : validType.IsUnderlyingTypePrimitive
                 ? $"ValidationCell<Valid<{validType.RawTypeName},{validType.Constraint}>, {validType.RawTypeName}>"
-        : $"{validType.TypeName}.Mutable";
+                : $"{validType.TypeName}.Mutable";
 
     private string? GetMutableProperty(IPropertySymbol property, IValidType validType)
         => validType.IsCollection
@@ -359,7 +368,7 @@ public string GetIntermediateToMutable()
     public string GetMutableDtoTryCreate()
        => $@"            public Result<{ClassName}, ErrorList> TryCreate()
             => ({string.Join("," + Environment.NewLine + "                ",
-                GetProperties().Select(p => $"Cells.{p.property.Name}.AsResult({If(p.validType.IsCollection, () => $"{p.validType.ElementType!.TypeName}.Validators.MutableList")}).Prefix(nameof({p.property.Name}))"))})
+                GetProperties().Select(p => $"Cells.{p.property.Name}.AsResult({If(p.validType.IsCollection, () => $"{p.validType.ElementType!.TypeName}.Validators.Mutable{p.validType.CollectionKind}")}).Prefix(nameof({p.property.Name}))"))})
                .Apply(({string.Join(", ", GetProperties().Select((_,x) => letters[x]))})
                    => new {ClassName}({string.Join(", ", GetProperties().Select((_,x) => letters[x]))}));";
 
@@ -403,7 +412,7 @@ public string GetIntermediateToMutable()
 
     public string GetMutableDtoProperty(IPropertySymbol property, IValidType validType)
         => validType.IsCollection || validType.IsDictionary 
-            ?$"            public MutableList<{validType.ElementType!.TypeName}.Mutable> {property.Name} => Cells.{property.Name};"
+            ?$"            public Mutable{validType.CollectionKind}<{validType.ElementType!.TypeName}.Mutable> {property.Name} => Cells.{property.Name};"
             : !validType.IsUnderlyingTypePrimitive
             ? $"            public {validType.TypeName}.Mutable {property.Name} => Cells.{property.Name};"
             : $@"            public {validType.RawTypeName} {property.Name}

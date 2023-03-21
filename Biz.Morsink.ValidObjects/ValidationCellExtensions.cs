@@ -55,4 +55,9 @@ public static class ValidationCellExtensions
             where TConstraint : IConstraint<TDto>, new()
             => new (Valid<TDto,TConstraint>.Validator, _dto);
     }
+
+    public static Valid<T, C>.Mutable GetMutable<T, C>(this ValidationCell<Valid<T, C>, T> cell)
+        where T : notnull
+        where C : IConstraint<T>, new()
+        => cell.AsResult().Switch(vo => new Valid<T, C>.Mutable(vo), _ => new(cell.Value));
 }

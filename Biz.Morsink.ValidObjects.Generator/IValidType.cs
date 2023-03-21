@@ -1,7 +1,10 @@
 using System.Collections.Immutable;
+using System.Data;
 using Biz.Morsink.Results;
 using Biz.Morsink.Results.Errors;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+
 namespace Biz.Morsink.ValidObjects.Generator;
 
 public interface IValidType
@@ -14,6 +17,18 @@ public interface IValidType
     bool IsCollection { get; }
     bool IsDictionary { get; }
     Type? CollectionType { get; }
+
+    CollectionKind? CollectionKind => CollectionType?.Name switch
+    {
+        null => null,
+        $"{nameof(ImmutableList<object>)}`1" => Biz.Morsink.ValidObjects.Generator.CollectionKind.List,
+        $"{nameof(IImmutableList<object>)}`1" => Biz.Morsink.ValidObjects.Generator.CollectionKind.List,
+        $"{nameof(ImmutableDictionary<object,object>)}`2" => Biz.Morsink.ValidObjects.Generator.CollectionKind.Dictionary,
+        $"{nameof(IImmutableSet<object>)}`1" => Biz.Morsink.ValidObjects.Generator.CollectionKind.Set,
+        $"{nameof(ImmutableHashSet)}`1" => Biz.Morsink.ValidObjects.Generator.CollectionKind.Set,
+        $"{nameof(ImmutableSortedSet<object>)}`1" => Biz.Morsink.ValidObjects.Generator.CollectionKind.Set,
+        _ => null
+    };
     bool IsUnderlyingTypePrimitive { get; }
     string? Constraint { get; }
     string DefaultValueAssignment { get; }

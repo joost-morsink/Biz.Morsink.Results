@@ -102,9 +102,12 @@ public class MutableList<T> : INotifyCollectionChanged, IReadOnlyList<T>, INotif
         => validator.TryCreate(_inner);
 }
 
-public class MutableSet<T> : INotifyCollectionChanged, IReadOnlyCollection<T>
+public class MutableSet<T> : INotifyCollectionChanged, INotifyPropertyChanged, IReadOnlyCollection<T>
 {
     private IImmutableSet<T> _inner;
+    public MutableSet() 
+        : this(ImmutableHashSet<T>.Empty)
+    { }
     public MutableSet(IImmutableSet<T> inner)
     {
         _inner = inner;
@@ -112,21 +115,37 @@ public class MutableSet<T> : INotifyCollectionChanged, IReadOnlyCollection<T>
 
     public IImmutableSet<T> ToImmutable()
         => _inner;
-
+    
+    private void OnItemChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        OnPropertyChanged("Item");
+    }
     public void Add(T item)
     {
         _inner = _inner.Add(item);
+        if(item is INotifyPropertyChanged npc)
+            npc.PropertyChanged += OnItemChanged;
         OnNotifyCollectionChanged(new(NotifyCollectionChangedAction.Add, item));
+    }
+
+    public void AddRange(IEnumerable<T> items)
+    {
+        foreach(var item in items)
+            Add(item);
     }
 
     public void Remove(T item)
     {
         _inner = _inner.Remove(item);
+        if (item is INotifyPropertyChanged npc)
+            npc.PropertyChanged -= OnItemChanged;
         OnNotifyCollectionChanged(new(NotifyCollectionChangedAction.Remove));
     }
 
     public void Clear()
     {
+        foreach (var item in _inner.OfType<INotifyPropertyChanged>())
+            item.PropertyChanged -= OnItemChanged;
         _inner = _inner.Clear();
         OnNotifyCollectionChanged(new(NotifyCollectionChangedAction.Reset));
     }
@@ -148,5 +167,14 @@ public class MutableSet<T> : INotifyCollectionChanged, IReadOnlyCollection<T>
     {
         CollectionChanged?.Invoke(this, eventArgs);
     }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+    public Result<IImmutableSet<Vo>, ErrorList> AsResult<Vo>(IObjectValidator<IImmutableSet<Vo>, IImmutableSet<T>> validator)
+        => validator.TryCreate(_inner);
 
 }

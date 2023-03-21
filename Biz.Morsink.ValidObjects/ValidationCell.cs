@@ -86,7 +86,7 @@ public class ValidationCell<TVo, TDto> : IValidationCell<TVo, TDto>, INotifyProp
 
     private Lazy<Result<TVo, ErrorList>> GetLazyValid(TVo validObject)
     {
-        SetValue(_validator.GetDto(validObject));
+        SetValue(_validator.GetDto(validObject), true);
 
         var res = new Lazy<Result<TVo, ErrorList>>(() => validObject);
         var _ = res.Value;

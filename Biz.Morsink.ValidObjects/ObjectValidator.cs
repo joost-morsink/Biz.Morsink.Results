@@ -8,8 +8,8 @@ public static class ObjectValidator
         where Vo : class, IValidObject<Vo, Dto>
         where Dto : IDto<Vo, Dto>
     {
-        public Result<Vo, ErrorList> TryCreate(Dto dto)
-            => dto.TryCreate();
+        public Result<Vo, ErrorList> TryCreate(Dto smuts)
+            => smuts.TryCreate();
         public Dto GetDto(Vo validObject)
             => validObject.GetDto();
     }
@@ -22,8 +22,8 @@ public static class ObjectValidator
         where Vo : class, IValidObjectWithToMutable<Vo, Mut>
         where Mut : IValidationCell<Vo, MutDto>, IDto<Vo>
     {
-        public Result<Vo, ErrorList> TryCreate(Mut dto)
-            => dto.AsResult();
+        public Result<Vo, ErrorList> TryCreate(Mut smuts)
+            => smuts.AsResult();
 
         public Mut GetDto(Vo validObject)
             => validObject.GetMutable();
@@ -38,8 +38,8 @@ public static class ObjectValidator
         where Mut : IValidationCell<Vo, MutDto>, IDto<Vo>
         where MutDto : IToMutable<Mut>, IDto<Vo>
     {
-        public Result<Vo, ErrorList> TryCreate(MutDto dto)
-            => dto.TryCreate();
+        public Result<Vo, ErrorList> TryCreate(MutDto smuts)
+            => smuts.TryCreate();
 
         public MutDto GetDto(Vo validObject)
             => validObject.GetMutableDto();
@@ -59,8 +59,8 @@ public static class ObjectValidator
             _tryCreate = tryCreate;
         }
 
-        public Result<Vo, ErrorList> TryCreate(Dto dto)
-            => _tryCreate(dto);
+        public Result<Vo, ErrorList> TryCreate(Dto smuts)
+            => _tryCreate(smuts);
         public Dto GetDto(Vo validObject)
             => validObject.GetDto();
     }
@@ -80,8 +80,8 @@ public static class ObjectValidator
             _getDto = getDto;
         }
 
-        public Result<Vo, ErrorList> TryCreate(Dto dto)
-            => dto.TryCreate();
+        public Result<Vo, ErrorList> TryCreate(Dto smuts)
+            => smuts.TryCreate();
 
         public Dto GetDto(Vo validObject)
             => _getDto(validObject);
@@ -96,8 +96,8 @@ public static class ObjectValidator
         where Int : class, IIntermediateDto<Vo, Dto>
         where Dto : IComplexDto<Vo, Int, Dto>
     {
-        public Result<Vo, ErrorList> TryCreate(Dto dto)
-            => dto.TryCreate();
+        public Result<Vo, ErrorList> TryCreate(Dto smuts)
+            => smuts.TryCreate();
         public Result<Vo, ErrorList> TryCreate(Int dto)
             => dto.TryCreate();
         public Result<Int, ErrorList> TryCreateIntermediate(Dto dto)
@@ -126,8 +126,8 @@ public static class ObjectValidator
             _baseValidator = baseValidator;
             _indexer = indexer;
         }
-        public Result<ImmutableList<Vo>, ErrorList> TryCreate(ImmutableList<Dto> dtos)
-            => dtos.Select((dto, index) => _baseValidator.TryCreate(dto).Prefix(_indexer(dto, index))).SequenceList();
+        public Result<ImmutableList<Vo>, ErrorList> TryCreate(ImmutableList<Dto> smuts)
+            => smuts.Select((dto, index) => _baseValidator.TryCreate(dto).Prefix(_indexer(dto, index))).SequenceList();
         public ImmutableList<Dto> GetDto(ImmutableList<Vo> validObjects)
             => validObjects.Select(vo => _baseValidator.GetDto(vo)).ToImmutableList();
     }
@@ -135,7 +135,6 @@ public static class ObjectValidator
                                                                                                    Func<Dto, int, object> indexer)
         => new ListImpl<Vo, Dto>(baseValidator, indexer);
     public static IObjectValidator<ImmutableList<Vo>, ImmutableList<Dto>> ToListValidator<Vo, Dto>(this IObjectValidator<Vo, Dto> baseValidator)
-        where Dto : class
         => baseValidator.ToListValidator((_, idx) => idx);
     
     private class MutableListImpl<Vo, Dto, Mut, MutDto> : IObjectValidator<ImmutableList<Vo>, ImmutableList<Mut>>
@@ -150,8 +149,8 @@ public static class ObjectValidator
             _indexer = indexer;
         }
 
-        public Result<ImmutableList<Vo>, ErrorList> TryCreate(ImmutableList<Mut> dto)
-            => dto.Select((d, index) => d.AsResult().Prefix(_indexer(d, index))).SequenceList();
+        public Result<ImmutableList<Vo>, ErrorList> TryCreate(ImmutableList<Mut> smuts)
+            => smuts.Select((d, index) => d.AsResult().Prefix(_indexer(d, index))).SequenceList();
 
         public ImmutableList<Mut> GetDto(ImmutableList<Vo> validObject)
             => validObject.Select(vo => vo.GetMutable()).ToImmutableList();
@@ -188,8 +187,8 @@ public static class ObjectValidator
             _toVoSet = toVoSet;
             _toDtoSet = toDtoSet;
         }
-        public Result<Svo, ErrorList> TryCreate(Sdto dtos)
-            => dtos.Select((dto) => _baseValidator.TryCreate(dto).Prefix(_indexer(dto))).SequenceSet(_toVoSet);
+        public Result<Svo, ErrorList> TryCreate(Sdto smuts)
+            => smuts.Select((dto) => _baseValidator.TryCreate(dto).Prefix(_indexer(dto))).SequenceSet(_toVoSet);
         public Sdto GetDto(Svo validObjects)
             => _toDtoSet(validObjects.Select(vo => _baseValidator.GetDto(vo)));
     }
@@ -200,24 +199,47 @@ public static class ObjectValidator
                 ts => ts.ToImmutableHashSet(),
                 ts => ts.ToImmutableHashSet());
     public static IObjectValidator<IImmutableSet<Vo>, IImmutableSet<Dto>> ToSetValidator<Vo, Dto>(this IObjectValidator<Vo, Dto> baseValidator)
-        where Dto : class
-        => baseValidator.ToSetValidator(d => d);
+        => baseValidator.ToSetValidator(d => d!);
     public static IObjectValidator<ImmutableHashSet<Vo>, ImmutableHashSet<Dto>> ToHashSetValidator<Vo, Dto>(this IObjectValidator<Vo, Dto> baseValidator,
                                                                                                   Func<Dto, object> indexer)
         => new SetImpl<Vo, Dto,ImmutableHashSet<Vo>, ImmutableHashSet<Dto>>(baseValidator, indexer,
             ts => ts.ToImmutableHashSet(),
             ts => ts.ToImmutableHashSet());
     public static IObjectValidator<ImmutableHashSet<Vo>, ImmutableHashSet<Dto>> ToHashSetValidator<Vo, Dto>(this IObjectValidator<Vo, Dto> baseValidator)
-        where Dto : class
-        => baseValidator.ToHashSetValidator(d => d);
+        => baseValidator.ToHashSetValidator(d => d!);
     public static IObjectValidator<ImmutableSortedSet<Vo>, ImmutableSortedSet<Dto>> ToSortedSetValidator<Vo, Dto>(this IObjectValidator<Vo, Dto> baseValidator,
         Func<Dto, object> indexer)
         => new SetImpl<Vo, Dto,ImmutableSortedSet<Vo>, ImmutableSortedSet<Dto>>(baseValidator, indexer,
             ts => ts.ToImmutableSortedSet(),
             ts => ts.ToImmutableSortedSet());
     public static IObjectValidator<ImmutableSortedSet<Vo>, ImmutableSortedSet<Dto>> ToSortedSetValidator<Vo, Dto>(this IObjectValidator<Vo, Dto> baseValidator)
-        where Dto : class
-        => baseValidator.ToSortedSetValidator(d => d);
+        => baseValidator.ToSortedSetValidator(d => d!);
+
+    // private class MutableSetImpl<Vo, Mut, Svo, Smut> : IObjectValidator<Svo, Smut>
+    //     where Svo : IImmutableSet<Vo>
+    //      where Smut : IImmutableSet<Mut>
+    // {
+    //     private readonly IObjectValidator<Vo, Mut> _baseValidator;
+    //     private readonly Func<Mut, object> _indexer;
+    //     private readonly Func<IEnumerable<Vo>, Svo> _toVoSet;
+    //     private readonly Func<IEnumerable<Mut>, Smut> _toMutSet;
+    //
+    //     public MutableSetImpl(IObjectValidator<Vo,Mut> baseValidator, Func<Mut, object> indexer,
+    //         Func<IEnumerable<Vo>, Svo> toVoSet,
+    //         Func<IEnumerable<Mut>, Smut> toMutSet)
+    //     {
+    //         _baseValidator = baseValidator;
+    //         _indexer = indexer;
+    //         _toVoSet = toVoSet;
+    //         _toMutSet = toMutSet;
+    //     }
+    //
+    //     public Result<Svo, ErrorList> TryCreate(Smut smuts)
+    //         => smuts.Select(mut => _baseValidator.TryCreate(mut).Prefix(_indexer(mut))).SequenceSet(_toVoSet);
+    //
+    //     public Smut GetDto(Svo validObjects)
+    //         => _toMutSet(validObjects.Select(vo => _baseValidator.GetDto(vo)));
+    // }
     #endregion
     
     #region Null
@@ -231,8 +253,8 @@ public static class ObjectValidator
             _inner = inner;
         }
 
-        public Result<Vo?, ErrorList> TryCreate(Dto? dto)
-            => dto.PropagateNull(_inner.TryCreate);
+        public Result<Vo?, ErrorList> TryCreate(Dto? smuts)
+            => smuts.PropagateNull(_inner.TryCreate);
         public Dto? GetDto(Vo? validObject)
             => validObject == null ? default : _inner.GetDto(validObject);
     }
@@ -261,8 +283,8 @@ public static class ObjectValidator
             _toVoDict = toVoDict;
             _toDtoDict = toDtoDict;
         }
-        public Result<Dvo, ErrorList> TryCreate(Ddto dto)
-            => dto.Select(kvp => new KeyValuePair<K, Result<Vo, ErrorList>>(kvp.Key, _baseValidator.TryCreate(kvp.Value)))
+        public Result<Dvo, ErrorList> TryCreate(Ddto smuts)
+            => smuts.Select(kvp => new KeyValuePair<K, Result<Vo, ErrorList>>(kvp.Key, _baseValidator.TryCreate(kvp.Value)))
                 .SequenceDictionary(_toVoDict);
         public Ddto GetDto(Dvo validObject)
             => _toDtoDict(validObject.Select(kvp => (kvp.Key, _baseValidator.GetDto(kvp.Value))));
@@ -325,8 +347,8 @@ public static class ObjectValidator
             _toVoDict = toVoDict;
             _toDtoDict = toDtoDict;
         }
-        public Result<Dvo, ErrorList> TryCreate(Ddto dto)
-            => dto.Select(kvp => new KeyValuePair<Result<Kvo, ErrorList>, Result<Vo, ErrorList>>(_baseKeyValidator.TryCreate(kvp.Key), _baseValueValidator.TryCreate(kvp.Value)))
+        public Result<Dvo, ErrorList> TryCreate(Ddto smuts)
+            => smuts.Select(kvp => new KeyValuePair<Result<Kvo, ErrorList>, Result<Vo, ErrorList>>(_baseKeyValidator.TryCreate(kvp.Key), _baseValueValidator.TryCreate(kvp.Value)))
                 .SequenceKeyDictionary(_toVoDict);
         public Ddto GetDto(Dvo validObject)
             => _toDtoDict(validObject.Select(kvp => (_baseKeyValidator.GetDto(kvp.Key), _baseValueValidator.GetDto(kvp.Value))));
