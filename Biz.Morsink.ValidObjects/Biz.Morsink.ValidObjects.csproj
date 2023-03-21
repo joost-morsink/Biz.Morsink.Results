@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <LangVersion>preview</LangVersion>
-        <EnablePreviewFeatures>true</EnablePreviewFeatures>
         <VersionPrefix>0.1.0</VersionPrefix>
     </PropertyGroup>
 
