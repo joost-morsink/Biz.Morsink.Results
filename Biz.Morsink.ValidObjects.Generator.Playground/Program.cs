@@ -39,7 +39,7 @@ public class Identifier : RegexConstraint
     {
     }
 }
-[ValidObject(Mutable=true)]
+[ValidObject(Mutable=false)]
 public partial class Address
 {
     public NonEmptyString Street { get; }
@@ -47,7 +47,7 @@ public partial class Address
     public ZipCodeString ZipCode { get; }
     public NonEmptyString City { get; }
 }
-[ValidObject(Mutable=true)]
+[ValidObject(Mutable=false)]
 public partial class Person
 {
     public NonEmptyString FirstName { get; }

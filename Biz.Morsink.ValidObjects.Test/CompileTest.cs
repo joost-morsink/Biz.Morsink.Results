@@ -1,13 +1,6 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.ComponentModel;
-using System.Data;
-using System.Linq;
-using System.Runtime.CompilerServices;
 using Biz.Morsink.Results;
-using Biz.Morsink.Results.Errors;
-using Biz.Morsink.ValidObjects.Generator;
-using Biz.Morsink.ValidObjects.Mutable;
 
 namespace Biz.Morsink.ValidObjects.Test;
 
@@ -41,7 +34,7 @@ public partial class Address
     public NonEmptyString HouseNumber { get; }
     public ZipCodeString ZipCode { get; }
     public NonEmptyString City { get; }
-    }
+}
 
 [ValidObject(Mutable = true)]
 public partial class Person
@@ -51,6 +44,32 @@ public partial class Person
     public AgeNumber Age { get; }
     public Address MainAddress { get; }
     public ImmutableList<Address> Addresses { get; }
+    public IImmutableSet<Valid<string, Identifier>> Tags { get; }
+
+    [ValidationMethod]
+    private IEnumerable<string> Check()
+    {
+        if (Equals(FirstName, LastName))
+            yield return "First and lastnames should be different.";
+    }
+}
+[ValidObject]
+public partial class AddressImm
+{
+    public NonEmptyString Street { get; }
+    public NonEmptyString HouseNumber { get; }
+    public ZipCodeString ZipCode { get; }
+    public NonEmptyString City { get; }
+}
+
+[ValidObject]
+public partial class PersonImm
+{
+    public NonEmptyString64 FirstName { get; }
+    public NonEmptyString LastName { get; }
+    public AgeNumber Age { get; }
+    public AddressImm MainAddress { get; }
+    public ImmutableList<AddressImm> Addresses { get; }
     public IImmutableSet<Valid<string, Identifier>> Tags { get; }
 
     [ValidationMethod]
@@ -216,5 +235,25 @@ public class CompileTest
         p.ZipCode = "1234AB";
         p.ValidObject.Should().BeEquivalentTo(vo);
         p.ValidObject.Should().NotBe(vo);
+    }
+
+    [Test]
+    public void ImmutableTest()
+    {
+        var p = new PersonImm.Dto
+        {
+            FirstName = "Joost",
+            LastName = "Morsink",
+            Age = 43,
+            MainAddress = new()
+            {
+                Street = "Teststraat",
+                HouseNumber = "1",
+                ZipCode = "1234AB",
+                City = "Teststad"
+            }
+        };
+        p = p with {Addresses = p.Addresses.Add(p.MainAddress)};
+        p.TryCreate().Should().BeSuccess();
     }
 }

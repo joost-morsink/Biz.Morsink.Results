@@ -155,7 +155,7 @@ partial class {ClassName} : {GetComplexValidObjectInterface()}, IHasStaticValida
 {GetTryCreate("TryCreateIntermediate", "Intermediate")}
         public Result<{ClassName}, ErrorList> TryCreate()
             => TryCreateIntermediate().Bind(x => x.TryCreate());
-{GetDtoToMutable()}
+{IfMutable(GetDtoToMutable)}
     }}";
     public string GetTryCreate(string methodName = "TryCreate", string? className = null)
     {
