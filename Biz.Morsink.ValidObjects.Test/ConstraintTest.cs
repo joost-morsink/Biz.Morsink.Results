@@ -98,4 +98,27 @@ public class ConstraintTest
             validator.Check(i).Should().BeSuccess();
         validator.Check(6).Should().BeFailure();
     }
+
+    public record ZipCodeInfo(string Numbers, string Letters);
+    public class ZipCode : TransformResultConstraint<string, ZipCode.Inner, (string,string), ZipCodeInfo>
+    {
+        public class Inner : RegexConstraint2
+        {
+            public Inner() : base("^([1-9][0-9]{3}) ?([A-Za-z]{2})$")
+            {
+            }
+        }
+
+        protected override ZipCodeInfo TransformResult((string, string) result)
+            => new (result.Item1, result.Item2);
+    }
+
+    [Test]
+    public void ZipCodeTest()
+    {
+        Valid<string, ZipCode, ZipCodeInfo>.TryCreate("1234 AB").Should().BeSuccess()
+            .Which.Result.Should().Be(new ZipCodeInfo("1234", "AB"));
+        Valid<string, ZipCode, ZipCodeInfo>.TryCreate("1234AB").Should().BeSuccess()
+            .Which.Result.Should().Be(new ZipCodeInfo("1234", "AB"));
+    }
 }

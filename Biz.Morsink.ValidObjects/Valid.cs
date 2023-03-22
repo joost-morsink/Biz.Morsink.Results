@@ -7,7 +7,7 @@ public class Valid<T, C> : IValidObject<T>, IHasStaticValidator<Valid<T, C>, T>,
     public static IObjectValidator<Valid<T, C>, T> Validator { get; }
         = ObjectValidator.For<Valid<T, C>, T>(TryCreate);
     public static C Constraint { get; } = new ();
-    private Valid(T value)
+    internal Valid(T value)
     {
         Value = value;
     }
@@ -67,4 +67,21 @@ public class Valid<T, C> : IValidObject<T>, IHasStaticValidator<Valid<T, C>, T>,
             Mutable.ToSetValidator(d => d);
 
     }
+}
+
+public class Valid<T, C, R> : Valid<T, C> 
+    where C : IConstraint<T, R>, new()
+        where T : notnull
+{
+    public new static IObjectValidator<Valid<T, C, R>, T> Validator { get; }
+        = ObjectValidator.For<Valid<T, C, R>, T>(TryCreate);
+    internal Valid(T value, R result) : base(value)
+    {
+        Result = result;
+    }
+    public R Result { get; }
+    public static implicit operator T(Valid<T, C, R> value)
+        => value.Value;
+    public new static Result<Valid<T, C, R>, ErrorList> TryCreate(T value)
+        => Constraint.Check(value).Select(v => new Valid<T, C, R>(v.Item1, v.Item2));
 }
