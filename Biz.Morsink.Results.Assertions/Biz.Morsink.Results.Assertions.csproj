@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
-    <VersionPrefix>0.1.1</VersionPrefix>
+    <VersionPrefix>0.1.2</VersionPrefix>
     <PackageId>Biz.Morsink.Results.Assertions</PackageId>
     <Description>A Fluent Assertions companion for Biz.Morsink.Results.</Description>
     <PackageProjectUrl>https://github.com/joost-morsink/Biz.Morsink.Results</PackageProjectUrl>
@@ -9,7 +8,6 @@
     <Copyright>(C) 2020 Joost W. Morsink</Copyright>
     <PackageTags>Results</PackageTags>
   </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="FluentAssertions" Version="6.3.0" />
   </ItemGroup>
