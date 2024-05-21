@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Linq;
+using System.Threading;
 
 namespace Biz.Morsink.ValidObjects.Generator;
 
@@ -56,7 +57,7 @@ public class Generator : IIncrementalGenerator
         return builder.ToImmutable();
     }
 
-    private Generation? GetGenerateTypes(GeneratorSyntaxContext generatorContext, CancellationToken cancel,
+    private Generation GetGenerateTypes(GeneratorSyntaxContext generatorContext, CancellationToken cancel,
         ClassDeclarationSyntax generatorContextNode)
     {
         foreach (var attributeList in generatorContextNode.AttributeLists)
@@ -84,8 +85,38 @@ public class Generator : IIncrementalGenerator
     }
 }
 
-public record GenerationOptions(bool Mutable);
-public record Generation(ClassDeclarationSyntax Class, GenerationOptions Options);
+public class GenerationOptions
+{
+    public GenerationOptions(bool Mutable)
+    {
+        this.Mutable = Mutable;
+    }
+
+    public bool Mutable { get; }
+
+    public void Deconstruct(out bool Mutable)
+    {
+        Mutable = this.Mutable;
+    }
+}
+
+public class Generation
+{
+    public Generation(ClassDeclarationSyntax Class, GenerationOptions Options)
+    {
+        this.Class = Class;
+        this.Options = Options;
+    }
+
+    public ClassDeclarationSyntax Class { get; }
+    public GenerationOptions Options { get; }
+
+    public void Deconstruct(out ClassDeclarationSyntax Class, out GenerationOptions Options)
+    {
+        Class = this.Class;
+        Options = this.Options;
+    }
+}
 
 // [Generate] 
 // public partial class Person

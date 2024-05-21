@@ -8,6 +8,7 @@
     <RootNamespace>Biz.Morsink.Results</RootNamespace>
     <Copyright>(C) 2020 Joost W. Morsink</Copyright>
     <PackageTags>Results</PackageTags>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

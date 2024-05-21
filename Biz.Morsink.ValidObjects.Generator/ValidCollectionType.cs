@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 namespace Biz.Morsink.ValidObjects.Generator;
@@ -11,7 +12,7 @@ class ValidCollectionType : IValidType
     }
     public INamedTypeSymbol Type { get; }
     public INamedTypeSymbol DecoratorType => Type.OriginalDefinition;
-    public IValidType ElementType => IValidType.Create(Type.TypeArguments[0]);
+    public IValidType ElementType => IValidTypeUtil.Create(Type.TypeArguments[0]);
     public string RawTypeName => $"{DecoratorType.ContainingNamespace}.{DecoratorType.Name}<{ElementType.RawTypeName}>";
     public string TypeName => Type.ToDisplayString();
     public bool IsValidType => ElementType.IsValidType;
@@ -19,7 +20,7 @@ class ValidCollectionType : IValidType
     public bool IsCollection => true;
     public bool IsDictionary => false;
 
-    public Type? CollectionType
+    public Type CollectionType
         => DecoratorType.Name switch
         {
             "ImmutableList" => typeof(ImmutableList<>),
@@ -27,7 +28,7 @@ class ValidCollectionType : IValidType
             _ => null
         };
     public bool IsUnderlyingTypePrimitive => ElementType.IsUnderlyingTypePrimitive;
-    public string? Constraint => null;
+    public string Constraint => null;
 
     public string DefaultValueAssignment => DecoratorType.Name == nameof(IImmutableSet<object>)
         ? $"System.Collections.Immutable.ImmutableHashSet<{ElementType.RawTypeName}>.Empty"

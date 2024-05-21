@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 namespace Biz.Morsink.ValidObjects.Generator;
@@ -10,18 +11,18 @@ class ValidDictionaryType : IValidType
     }
     public INamedTypeSymbol Type { get; }
     public INamedTypeSymbol DecoratorType => Type.OriginalDefinition;
-    public IValidType KeyType => IValidType.Create(Type.TypeArguments[0]);
-    public IValidType ValueType => IValidType.Create(Type.TypeArguments[1]);
+    public IValidType KeyType => IValidTypeUtil.Create(Type.TypeArguments[0]);
+    public IValidType ValueType => IValidTypeUtil.Create(Type.TypeArguments[1]);
     public string RawTypeName => $"{DecoratorType.ContainingNamespace}.{DecoratorType.Name}<{KeyType.RawTypeName}, {ValueType.RawTypeName}>";
     public string TypeName => Type.ToDisplayString();
     public bool IsValidType => ValueType.IsValidType;
     public bool IsComplexValidType => false;
-    public IValidType? ElementType => ValueType;
+    public IValidType ElementType => ValueType;
     public bool IsCollection => false;
     public bool IsDictionary => true;
-    public Type? CollectionType => typeof(IImmutableDictionary<,>);
+    public Type CollectionType => typeof(IImmutableDictionary<,>);
     public bool IsUnderlyingTypePrimitive => ValueType.IsUnderlyingTypePrimitive;
-    public string? Constraint => null;
+    public string Constraint => null;
 
     public string DefaultValueAssignment => DecoratorType.Name == nameof(IImmutableDictionary<object,object>)
         ? $"System.Collections.Immutable.ImmutableDictionary<{KeyType.RawTypeName}, {ValueType.RawTypeName}>.Empty"

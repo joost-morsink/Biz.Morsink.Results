@@ -9,5 +9,5 @@ public class ValidTypes
     private readonly ConcurrentDictionary<ITypeSymbol, IValidType> _nullEntries = new (SymbolEqualityComparer.Default);
     public IValidType Get(ITypeSymbol type)
         => (type.NullableAnnotation == NullableAnnotation.Annotated
-            ? _nullEntries : _entries).GetOrAdd(type, t => IValidType.Create(t));
+            ? _nullEntries : _entries).GetOrAdd(type, t => IValidTypeUtil.Create(t));
 }

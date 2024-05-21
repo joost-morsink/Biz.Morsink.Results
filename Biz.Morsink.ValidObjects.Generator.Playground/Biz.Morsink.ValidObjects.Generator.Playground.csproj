@@ -2,7 +2,6 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <LangVersion>preview</LangVersion>
         <EnablePreviewFeatures>true</EnablePreviewFeatures>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
@@ -10,6 +9,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Biz.Morsink.ValidObjects.Generator\Biz.Morsink.ValidObjects.Generator.csproj" />
+      <ProjectReference Include="..\Biz.Morsink.ValidObjects\Biz.Morsink.ValidObjects.csproj" />
     </ItemGroup>
 
     <ItemGroup>

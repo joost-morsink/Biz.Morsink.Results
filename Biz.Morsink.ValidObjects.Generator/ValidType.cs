@@ -1,5 +1,8 @@
+using System;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
+using System.Linq;
+
 namespace Biz.Morsink.ValidObjects.Generator;
 
 class ValidType : IValidType
@@ -43,10 +46,10 @@ class ValidType : IValidType
     public string TypeName => Type.ToDisplayString();
     public ITypeSymbol RawType { get; }
     public string RawTypeName => GenerateAttribute != null ? $"{Type.ToDisplayString()}.Dto" : this.RawType.ToDisplayString();
-    public INamedTypeSymbol? StaticValidator { get; }
-    public INamedTypeSymbol? FullInterface { get; }
-    public INamedTypeSymbol? VoInterface { get; }
-    public AttributeData? GenerateAttribute { get; }
+    public INamedTypeSymbol StaticValidator { get; }
+    public INamedTypeSymbol FullInterface { get; }
+    public INamedTypeSymbol VoInterface { get; }
+    public AttributeData GenerateAttribute { get; }
     public bool GenerateMutable { get; }
 
     public string GetTryCreate(string name)
@@ -74,16 +77,15 @@ class ValidType : IValidType
     
     public bool IsValidType => GenerateAttribute != null || !SymbolEqualityComparer.Default.Equals(Type, RawType);
     public bool IsComplexValidType => GenerateAttribute != null && ValidationMethods.Length > 0;
-    public IValidType? ElementType => null;
+    public IValidType ElementType => null;
     public bool IsCollection => false;
     public bool IsDictionary => false;
-    public Type? CollectionType => null;
-    public string? Constraint { get; }
+    public Type CollectionType => null;
+    public string Constraint { get; }
 
     public bool IsUnderlyingTypePrimitive =>
         GenerateAttribute == null;
-
-
+    
     public string DefaultValueAssignment
     {
         get

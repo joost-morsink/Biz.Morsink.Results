@@ -1,17 +1,18 @@
+using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
-using Biz.Morsink.Results.Errors;
+using System.Linq;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Operations;
 namespace Biz.Morsink.ValidObjects.Generator;
 
 [SuppressMessage("ReSharper", "RedundantDefaultMemberInitializer")]
-public record TypeToGenerate(INamedTypeSymbol Symbol, ImmutableArray<IPropertySymbol> PropertySymbols, GenerationOptions Options)
+public class TypeToGenerate
 {
     public string Namespace => Symbol.ContainingNamespace.ToDisplayString();
     public string ClassName => Symbol.Name;
     public ValidTypes ValidTypes { get; } = new ();
-    public ImmutableArray<(IMethodSymbol, string?)> ValidationMethods => Symbol.GetMembers()
+    public ImmutableArray<(IMethodSymbol, string)> ValidationMethods => Symbol.GetMembers()
         .OfType<IMethodSymbol>()
         .SelectMany(m => m.GetAttributes()
             .Where(a => a.AttributeClass?.ToDisplayString() == "Biz.Morsink.ValidObjects.ValidationMethodAttribute")
@@ -19,6 +20,10 @@ public record TypeToGenerate(INamedTypeSymbol Symbol, ImmutableArray<IPropertySy
                 .Select(tc => tc.Value?.ToString())
                 .FirstOrDefault())))
         .ToImmutableArray();
+
+    public INamedTypeSymbol Symbol { get; }
+    public ImmutableArray<IPropertySymbol> PropertySymbols { get; }
+    public GenerationOptions Options { get; }
 
     private string If(bool condition, string str)
         => condition ? str : "";
@@ -36,7 +41,7 @@ public record TypeToGenerate(INamedTypeSymbol Symbol, ImmutableArray<IPropertySy
         => PropertySymbols.AsEnumerable().Select(ps => (ps, GetValidType(ps.Type)));
 
     public string GetSource()
-        => $@"{(IValidType.Create(Symbol).IsComplexValidType
+        => $@"{(IValidTypeUtil.Create(Symbol).IsComplexValidType
             ? GetComplexSource()
             : GetSimpleSource())}
 #pragma warning restore CS8019";
@@ -157,7 +162,7 @@ partial class {ClassName} : {GetComplexValidObjectInterface()}, IHasStaticValida
             => TryCreateIntermediate().Bind(x => x.TryCreate());
 {IfMutable(GetDtoToMutable)}
     }}";
-    public string GetTryCreate(string methodName = "TryCreate", string? className = null)
+    public string GetTryCreate(string methodName = "TryCreate", string className = null)
     {
         className ??= ClassName;
         var validProps = GetProperties().Where(p => p.validType.IsValidType).ToList();
@@ -214,6 +219,13 @@ partial class {ClassName} : {GetComplexValidObjectInterface()}, IHasStaticValida
             : "";
     private static string letters = "tuvwxyz";
 
+    public TypeToGenerate(INamedTypeSymbol Symbol, ImmutableArray<IPropertySymbol> PropertySymbols, GenerationOptions Options)
+    {
+        this.Symbol = Symbol;
+        this.PropertySymbols = PropertySymbols;
+        this.Options = Options;
+    }
+
     public string GetIntermediateDto()
         => $@"
     public partial record Intermediate({string.Join(", ", GetProperties().Select(ps => $"{ps.validType.TypeName} {ps.property.Name}"))})
@@ -264,14 +276,14 @@ public string GetIntermediateToMutable()
             && symbol.TypeArguments.Length == 1
             && symbol.TypeArguments[0].ContainingNamespace.ToDisplayString() == @Namespace
             && symbol.TypeArguments[0].Name == type; 
-    public string CallValidationMethod(ISymbol method, string? message)
+    public string CallValidationMethod(ISymbol method, string message)
     {
         if (method is IMethodSymbol ms)
         {
             if (ms.ReturnType is INamedTypeSymbol rt
                 && IsEnumerableOf(rt, "Biz.Morsink.Results.Errors", "Error")
                 || ms.ReturnType.ContainingNamespace.ToDisplayString() == "Biz.Morsink.Results.Errors"
-                && ms.ReturnType.Name == nameof(ErrorList))
+                && ms.ReturnType.Name == "ErrorList")
                 return $"{method.Name}()";
         }
         return $"{method.Name}().ToErrorList({(message!=null ? @$"@""{message.Replace("\"","\"\"")}""" : "")})";
@@ -299,18 +311,18 @@ public string GetIntermediateToMutable()
 
     public string GetMutableExposedTypeName(IValidType validType)
         => validType.IsCollection
-            ? $"Mutable{validType.CollectionKind}<{validType.ElementType!.TypeName}.Mutable>"
+            ? $"Mutable{validType.CollectionKind()}<{validType.ElementType!.TypeName}.Mutable>"
             : validType.IsUnderlyingTypePrimitive
                 ? validType.RawTypeName
                 : $"{validType.TypeName}.Mutable";
     public string GetMutableTypeName(IValidType validType)
         => validType.IsCollection
-            ? $"Mutable{validType.CollectionKind}<{validType.ElementType!.TypeName}.Mutable>"
+            ? $"Mutable{validType.CollectionKind()}<{validType.ElementType!.TypeName}.Mutable>"
             : validType.IsUnderlyingTypePrimitive
                 ? $"ValidationCell<Valid<{validType.RawTypeName},{validType.Constraint}>, {validType.RawTypeName}>"
                 : $"{validType.TypeName}.Mutable";
 
-    private string? GetMutableProperty(IPropertySymbol property, IValidType validType)
+    private string GetMutableProperty(IPropertySymbol property, IValidType validType)
         => validType.IsCollection
             ? $@"        public {GetMutableExposedTypeName(validType)} {property.Name}
         {{
@@ -368,7 +380,7 @@ public string GetIntermediateToMutable()
     public string GetMutableDtoTryCreate()
        => $@"            public Result<{ClassName}, ErrorList> TryCreate()
             => ({string.Join("," + Environment.NewLine + "                ",
-                GetProperties().Select(p => $"Cells.{p.property.Name}.AsResult({If(p.validType.IsCollection, () => $"{p.validType.ElementType!.TypeName}.Validators.Mutable{p.validType.CollectionKind}")}).Prefix(nameof({p.property.Name}))"))})
+                GetProperties().Select(p => $"Cells.{p.property.Name}.AsResult({If(p.validType.IsCollection, () => $"{p.validType.ElementType!.TypeName}.Validators.Mutable{p.validType.CollectionKind()}")}).Prefix(nameof({p.property.Name}))"))})
                .Apply(({string.Join(", ", GetProperties().Select((_,x) => letters[x]))})
                    => new {ClassName}({string.Join(", ", GetProperties().Select((_,x) => letters[x]))}));";
 
@@ -412,7 +424,7 @@ public string GetIntermediateToMutable()
 
     public string GetMutableDtoProperty(IPropertySymbol property, IValidType validType)
         => validType.IsCollection || validType.IsDictionary 
-            ?$"            public Mutable{validType.CollectionKind}<{validType.ElementType!.TypeName}.Mutable> {property.Name} => Cells.{property.Name};"
+            ?$"            public Mutable{validType.CollectionKind()}<{validType.ElementType!.TypeName}.Mutable> {property.Name} => Cells.{property.Name};"
             : !validType.IsUnderlyingTypePrimitive
             ? $"            public {validType.TypeName}.Mutable {property.Name} => Cells.{property.Name};"
             : $@"            public {validType.RawTypeName} {property.Name}
@@ -422,4 +434,11 @@ public string GetIntermediateToMutable()
             }}";
 
     public string GetComplexMutableImplementation() => GetSimpleMutableImplementation();
+
+    public void Deconstruct(out INamedTypeSymbol Symbol, out ImmutableArray<IPropertySymbol> PropertySymbols, out GenerationOptions Options)
+    {
+        Symbol = this.Symbol;
+        PropertySymbols = this.PropertySymbols;
+        Options = this.Options;
+    }
 }

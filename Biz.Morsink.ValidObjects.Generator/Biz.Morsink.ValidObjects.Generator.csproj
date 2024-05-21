@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <ImplicitUsings>enable</ImplicitUsings>
+        <TargetFramework>netstandard2.0</TargetFramework>
         <VersionPrefix>0.1.0</VersionPrefix>
     </PropertyGroup>
 
@@ -9,9 +9,4 @@
       <PackageReference Include="Microsoft.CodeAnalysis" Version="4.0.1" />
       <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.0.1" />
     </ItemGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\Biz.Morsink.ValidObjects\Biz.Morsink.ValidObjects.csproj" />
-    </ItemGroup>
-
 </Project>
