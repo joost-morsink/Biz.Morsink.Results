@@ -78,6 +78,17 @@ public class ValidObjectTest
             && a.GetDto().Equals(dto.Addresses[0]));
     }
 
+    [Test]
+    public void CellTest()
+    {
+        var cell = 12.Constrain().With<MinValue<Plus<Zero>>>();
+        cell.IsValid.Should().BeTrue();
+        cell.ValidObject?.Value.Should().Be(12);
+        cell.Value -= 13;
+        cell.IsValid.Should().BeFalse();
+        cell.ValidObject.Should().BeNull();
+        cell.Value.Should().Be(-1);
+    }
     // [Test]
     // public void MutableTest()
     // {

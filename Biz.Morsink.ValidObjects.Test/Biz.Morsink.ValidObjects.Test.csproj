@@ -2,6 +2,7 @@
     <PropertyGroup>
         <IsPackable>false</IsPackable>
         <EnablePreviewFeatures>true</EnablePreviewFeatures>
+        <Nullable>enable</Nullable>
     </PropertyGroup>
 
     <ItemGroup>

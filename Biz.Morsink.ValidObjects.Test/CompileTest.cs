@@ -1,13 +1,14 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Text.RegularExpressions;
 using Biz.Morsink.Results;
+using Biz.Morsink.Results.Errors;
 
 namespace Biz.Morsink.ValidObjects.Test;
 
 using NonEmptyString = Valid<string, NotEmpty>;
 using ZipCodeString = Valid<string, DutchZipCode>;
-using NaturalNumber = Valid<int, MinValue<Zero>>;
-using AgeNumber = Valid<int,ValueBetween<Zero, Plus<One<Hundred<Twenty>>>>>;
+using AgeNumber = Valid<int, ValueBetween<Zero, Plus<One<Hundred<Twenty>>>>>;
 using NonEmptyString64 = Valid<string, And<string, NotEmpty, MaxLength<Sixty<Four>>>>;
 public class DutchZipCode : RegexConstraint
 {
@@ -255,5 +256,32 @@ public class CompileTest
         };
         p = p with {Addresses = p.Addresses.Add(p.MainAddress)};
         p.TryCreate().Should().BeSuccess();
+    }
+
+    [Test]
+    public void ResultConstraintTest()
+    {
+        var vo = "1234ab".Constrain().With<ZipCodeConstraint, ZipCodeConstraint.Data>().ValidObject;
+        vo.Should().NotBeNull();
+        vo!.Result.Number.Should().Be(1234);
+        vo.Result.Letters.Should().Be("AB");
+    }
+
+    public class ZipCodeConstraint : IConstraint<string, ZipCodeConstraint.Data>
+    {
+        public record Data(int Number, string Letters)
+        {
+            public override string ToString()
+                => $"{Number} {Letters}";
+        }
+        public static Regex REGEX = new Regex("^([1-9][0-9]{3}) ?([A-Za-z]{2})$");
+        public Result<(string, Data), ErrorList> Check(string item)
+        {
+            var match = REGEX.Match(item);
+            if(match.Success)
+                return (item, new (int.Parse(match.Groups[1].Value), match.Groups[2].Value.ToUpperInvariant()));
+            else
+                return new Error("Value","PARSE_ERROR","Cannot parse ZIP").ToList();
+        }
     }
 }
