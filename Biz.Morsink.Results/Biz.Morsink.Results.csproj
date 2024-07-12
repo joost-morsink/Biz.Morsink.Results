@@ -1,16 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <VersionPrefix>0.3.0</VersionPrefix>
+    <TargetFrameworks>netstandard2.0;net6.0;net8.0</TargetFrameworks>
+    <VersionPrefix>0.4.0</VersionPrefix>
     <PackageId>Biz.Morsink.Results</PackageId>
     <Description>A result class and utility for failures.</Description>
     <PackageProjectUrl>https://github.com/joost-morsink/Biz.Morsink.Results</PackageProjectUrl>
     <RootNamespace>Biz.Morsink.Results</RootNamespace>
     <Copyright>(C) 2020 Joost W. Morsink</Copyright>
     <PackageTags>Results</PackageTags>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
-
+  <PropertyGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="System.Collections.Immutable" Version="6.0.0" />
   </ItemGroup>

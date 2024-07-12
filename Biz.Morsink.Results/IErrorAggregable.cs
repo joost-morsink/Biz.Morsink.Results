@@ -1,7 +1,8 @@
-﻿namespace Biz.Morsink.Results;
-
-public interface IErrorAggregable<E>
+﻿namespace Biz.Morsink.Results
 {
-    E Aggregate(E error);
+    public interface IErrorAggregable<E>
+    {
+        E Aggregate(E error);
+    }
 }
 

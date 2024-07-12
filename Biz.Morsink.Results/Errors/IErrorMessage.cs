@@ -1,6 +1,9 @@
-﻿namespace Biz.Morsink.Results.Errors;
+﻿using System.Globalization;
 
-public interface IErrorMessage
+namespace Biz.Morsink.Results.Errors
 {
-    string GetMessage(CultureInfo culture);
+    public interface IErrorMessage
+    {
+        string GetMessage(CultureInfo culture);
+    }
 }

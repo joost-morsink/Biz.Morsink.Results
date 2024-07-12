@@ -1,18 +1,28 @@
-﻿namespace Biz.Morsink.Results.Errors;
+﻿using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Globalization;
 
-public class ErrorMessage : IErrorMessage
+namespace Biz.Morsink.Results.Errors
 {
-    private readonly string _message;
-    private readonly IReadOnlyDictionary<CultureInfo, string> _messages;
-    public ErrorMessage(string defaultMessage, IReadOnlyDictionary<CultureInfo, string>? messages = null)
+    public class ErrorMessage : IErrorMessage
     {
-        _message = defaultMessage;
-        _messages = messages ?? ImmutableDictionary<CultureInfo, string>.Empty;
+        private readonly string _message;
+        private readonly IReadOnlyDictionary<CultureInfo, string> _messages;
+
+#if NET6_0_OR_GREATER
+        public ErrorMessage(string defaultMessage, IReadOnlyDictionary<CultureInfo, string>? messages = null)
+#else
+        public ErrorMessage(string defaultMessage, IReadOnlyDictionary<CultureInfo, string> messages = null)
+#endif
+        {
+            _message = defaultMessage;
+            _messages = messages ?? ImmutableDictionary<CultureInfo, string>.Empty;
+        }
+
+        public string GetMessage(CultureInfo culture)
+            => _messages.TryGetValue(culture, out var msg) ? msg : _message;
+
+        public static implicit operator ErrorMessage(string defaultMessage)
+            => new ErrorMessage(defaultMessage);
     }
-
-    public string GetMessage(CultureInfo culture)
-        => _messages.TryGetValue(culture, out var msg) ? msg : _message;
-
-    public static implicit operator ErrorMessage(string defaultMessage)
-        => new (defaultMessage);
 }
